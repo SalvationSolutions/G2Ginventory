@@ -87,6 +87,17 @@ tr:hover td{background:#f8faff}
 .toast.error{background:#E74C3C}
 .toast.warning{background:#E67E22}
 
+/* LOGIN */
+#login-screen{position:fixed;inset:0;background:linear-gradient(160deg,#0B2545,#1a4a8a);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px}
+.login-card{background:#fff;border-radius:20px;padding:36px 32px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,.3);text-align:center}
+.login-icon{font-size:52px;margin-bottom:8px}
+.login-card h1{font-family:Cinzel,serif;font-size:18px;color:#0B2545;margin-bottom:4px}
+.login-card p{font-size:12px;color:#888;margin-bottom:24px}
+.login-input{width:100%;border:2px solid #e0e8f5;border-radius:10px;padding:11px 14px;font-family:Nunito,sans-serif;font-size:14px;outline:none;margin-bottom:10px;text-align:center}
+.login-input:focus{border-color:#3A6BC5}
+.login-btn{width:100%;background:linear-gradient(135deg,#0B2545,#3A6BC5);color:#fff;border:none;border-radius:10px;padding:13px;font-family:Nunito,sans-serif;font-weight:900;font-size:14px;cursor:pointer;margin-top:4px}
+.login-error{color:#E74C3C;font-size:12px;font-weight:700;min-height:20px;margin-bottom:8px}
+
 /* EMPTY */
 .empty{text-align:center;padding:60px 20px;color:#aaa}
 .empty-icon{font-size:48px;margin-bottom:12px}
@@ -99,6 +110,22 @@ tr:hover td{background:#f8faff}
 </style>
 </head>
 <body>
+
+<!-- LOGIN SCREEN -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-icon">📦</div>
+    <h1>GREEK TO GO TAVERNA</h1>
+    <p>Inventory Management — Staff Login</p>
+    <input class="login-input" id="login-user" placeholder="Username" autocomplete="username" onkeydown="if(event.key==='Enter') document.getElementById('login-pass').focus()">
+    <input class="login-input" id="login-pass" placeholder="Password / PIN" type="password" autocomplete="current-password" onkeydown="if(event.key==='Enter') doLogin()">
+    <div class="login-error" id="login-error"></div>
+    <button class="login-btn" onclick="doLogin()">🔓 Login</button>
+  </div>
+</div>
+
+<!-- MAIN APP (hidden until login) -->
+<div id="main-app" style="display:none">
 
 <!-- HEADER -->
 <div class="header">
@@ -214,6 +241,8 @@ tr:hover td{background:#f8faff}
   </div>
 </div>
 
+</div><!-- end main-app -->
+
 <script>
 // ── Config ────────────────────────────────────────────────────────────────────
 // Google Apps Script URL — loaded from settings or default
@@ -225,6 +254,36 @@ var inventory = [];
 var editingId = null;
 var activeCat = 'All';
 var _online   = false;
+
+// ── Credentials ──────────────────────────────────────────────────────────────
+var STAFF = [
+  {username:'owner',    password:'1234', role:'Owner'},
+  {username:'Wahlene',  password:'1234', role:'Staff'},
+  {username:'Beth',     password:'5678', role:'Staff'},
+  {username:'Zap',      password:'9999', role:'Staff'},
+  {username:'cashier1', password:'1111', role:'Cashier'},
+  {username:'cashier2', password:'2222', role:'Cashier'},
+];
+var currentUser = null;
+
+function doLogin(){
+  var user = (document.getElementById('login-user').value||'').trim();
+  var pass = (document.getElementById('login-pass').value||'').trim();
+  var errEl = document.getElementById('login-error');
+  errEl.textContent = '';
+  var found = STAFF.find(function(s){
+    return s.username.toLowerCase()===user.toLowerCase() && s.password===pass;
+  });
+  if(!found){ errEl.textContent = '❌ Wrong username or password.'; return; }
+  currentUser = found;
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('main-app').style.display = 'block';
+  // Update header with user info
+  var userBadge = document.getElementById('user-badge');
+  if(userBadge) userBadge.textContent = '👤 '+found.username+' ('+found.role+')';
+  // Init app
+  initApp();
+}
 
 // ── Local Storage ─────────────────────────────────────────────────────────────
 function loadLocal(){
@@ -262,12 +321,14 @@ function sheetsCall(action, body){
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
-window.addEventListener('DOMContentLoaded', async function(){
-  // First time setup — prompt for URL if not saved
+window.addEventListener('DOMContentLoaded', function(){
+  // Focus username field on load
+  setTimeout(function(){ var el=document.getElementById('login-user'); if(el) el.focus(); }, 200);
+});
+
+async function initApp(){
   if(!localStorage.getItem('gtg_sheets_url')){
-    setTimeout(function(){
-      showToast('👆 Tap ⚙️ Script URL to connect Google Sheets','info');
-    }, 1000);
+    setTimeout(function(){ showToast('👆 Tap ⚙️ Script URL to connect Google Sheets','info'); },800);
   }
   loadLocal();
   renderTable();
@@ -283,7 +344,7 @@ window.addEventListener('DOMContentLoaded', async function(){
     showToast('⚠️ Cannot reach Sheets. Showing cached data.','warning');
     renderTable();
   }
-});
+}
 
 // ── Import ────────────────────────────────────────────────────────────────────
 async function importFromSheets(silent){
