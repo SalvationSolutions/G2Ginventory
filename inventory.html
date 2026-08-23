@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>G2G Taverna — Inventory</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Nunito:wght@400;600;700;800;900&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--blue:#0B2545;--accent:#3A6BC5;--gold:#C9A227;--green:#27AE60;--red:#E74C3C;--gray:#f5f7fa;--border:#e0e8f5}
+body{font-family:Nunito,sans-serif;background:var(--gray);color:#1a1a2e;min-height:100vh}
+
+/* HEADER */
+.header{background:var(--blue);color:#fff;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.header-title{display:flex;align-items:center;gap:10px}
+.header-title h1{font-family:Cinzel,serif;font-size:16px;letter-spacing:1px}
+.db-status{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;background:rgba(255,255,255,.1)}
+.db-dot{width:8px;height:8px;border-radius:50%;background:#888;flex-shrink:0}
+.db-status.connected{background:rgba(39,174,96,.15);border:1px solid rgba(39,174,96,.3)}
+.db-status.connected .db-dot{background:#27AE60;box-shadow:0 0 6px #27AE60}
+.db-status.disconnected{background:rgba(231,76,60,.15);border:1px solid rgba(231,76,60,.3)}
+.db-status.disconnected .db-dot{background:#E74C3C}
+.db-status.loading{background:rgba(243,156,18,.1);border:1px solid rgba(243,156,18,.2)}
+.db-status.loading .db-dot{background:#F39C12;animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* TOOLBAR */
+.toolbar{padding:14px 20px;background:#fff;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.toolbar h2{font-family:Cinzel,serif;font-size:18px;color:var(--blue);margin-right:auto}
+.btn{padding:8px 16px;border:none;border-radius:8px;font-family:Nunito,sans-serif;font-weight:800;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:5px;transition:.2s}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-green{background:var(--green);color:#fff}
+.btn-red{background:var(--red);color:#fff}
+.btn-dark{background:var(--blue);color:#fff}
+.btn-outline{background:#fff;color:var(--accent);border:2px solid var(--accent)}
+.btn:hover{opacity:.85}
+
+/* SEARCH + FILTERS */
+.controls{padding:12px 20px;background:#fff;border-bottom:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.search-box{flex:1;min-width:200px;padding:9px 14px;border:2px solid var(--border);border-radius:8px;font-family:Nunito,sans-serif;font-size:13px;outline:none}
+.search-box:focus{border-color:var(--accent)}
+.cat-filter{padding:6px 14px;border:2px solid var(--border);border-radius:20px;font-family:Nunito,sans-serif;font-size:11px;font-weight:700;cursor:pointer;background:#fff;color:#555;transition:.15s}
+.cat-filter.active{background:var(--accent);border-color:var(--accent);color:#fff}
+
+/* STATS */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:16px 20px}
+.stat-card{background:#fff;border-radius:12px;padding:16px;border:1px solid var(--border);text-align:center}
+.stat-num{font-size:28px;font-weight:900;color:var(--blue)}
+.stat-num.warn{color:#E67E22}
+.stat-num.danger{color:var(--red)}
+.stat-label{font-size:11px;color:#888;font-weight:700;text-transform:uppercase;margin-top:4px}
+
+/* TABLE */
+.table-wrap{padding:0 20px 20px;overflow-x:auto}
+table{width:100%;border-collapse:collapse;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+th{background:var(--blue);color:#fff;padding:10px 14px;font-size:11px;text-align:left;white-space:nowrap}
+td{padding:10px 14px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#f8faff}
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:800}
+.badge-ok{background:#e8f5e9;color:#27AE60}
+.badge-low{background:#fff3e0;color:#E67E22}
+.badge-out{background:#fdecea;color:var(--red)}
+.action-btns{display:flex;gap:4px}
+.icon-btn{width:30px;height:30px;border:none;border-radius:6px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:.15s}
+.icon-btn:hover{opacity:.75}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:999;padding:20px}
+.modal-overlay.active{display:flex}
+.modal{background:#fff;border-radius:16px;padding:24px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto}
+.modal h3{font-family:Cinzel,serif;font-size:17px;color:var(--blue);margin-bottom:18px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.form-group{display:flex;flex-direction:column;gap:4px}
+.form-group.full{grid-column:1/-1}
+.form-group label{font-size:11px;font-weight:800;color:var(--blue);text-transform:uppercase;letter-spacing:.4px}
+.form-group input,.form-group select{border:2px solid var(--border);border-radius:8px;padding:9px 12px;font-family:Nunito,sans-serif;font-size:13px;outline:none}
+.form-group input:focus{border-color:var(--accent)}
+.modal-actions{display:flex;gap:8px;margin-top:18px}
+.m-save{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:11px 20px;font-family:Nunito,sans-serif;font-weight:800;font-size:13px;cursor:pointer;flex:1}
+.m-cancel{background:var(--gray);color:#555;border:2px solid var(--border);border-radius:8px;padding:11px 20px;font-family:Nunito,sans-serif;font-weight:800;font-size:13px;cursor:pointer}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a2e;color:#fff;padding:11px 22px;border-radius:20px;font-size:13px;font-weight:700;z-index:9999;opacity:0;transition:.3s;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1}
+.toast.success{background:#27AE60}
+.toast.error{background:#E74C3C}
+.toast.warning{background:#E67E22}
+
+/* EMPTY */
+.empty{text-align:center;padding:60px 20px;color:#aaa}
+.empty-icon{font-size:48px;margin-bottom:12px}
+
+@media(max-width:600px){
+  .stats{grid-template-columns:1fr 1fr}
+  .form-grid{grid-template-columns:1fr}
+  .form-group.full{grid-column:1}
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-title">
+    <span style="font-size:24px">📦</span>
+    <h1>G2G TAVERNA — INVENTORY</h1>
+  </div>
+  <div style="display:flex;align-items:center;gap:8px">
+    <div id="db-status" style="display:flex;align-items:center;gap:7px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:20px;padding:5px 13px;font-size:11px;font-weight:800;transition:.3s">
+      <span id="db-dot" style="width:9px;height:9px;border-radius:50%;background:#F39C12;display:inline-block;transition:.3s;box-shadow:0 0 6px #F39C12"></span>
+      <span id="db-txt">Connecting…</span>
+    </div>
+    <span id="db-count" style="font-size:11px;opacity:.5"></span>
+  </div>
+</div>
+
+<!-- TOOLBAR -->
+<div class="toolbar">
+  <h2>📦 Inventory Management</h2>
+  <button class="btn btn-dark" onclick="importFromSheets()">⬇ Import from Sheet</button>
+  <button class="btn btn-green" onclick="backupToSheets()">⬆ Backup to Sheet</button>
+  <button class="btn btn-red" onclick="fixSheet()">🔧 Fix Sheet</button>
+  <button class="btn btn-primary" onclick="openAddModal()">+ Add Item</button>
+  <button class="btn" style="background:#555;color:#fff" onclick="openScriptSettings()">⚙️ Script URL</button>
+</div>
+
+<!-- SEARCH + CATEGORY FILTERS -->
+<div class="controls">
+  <input class="search-box" id="search" placeholder="🔍 Search items by name or category…" oninput="renderTable()">
+  <div id="cat-filters"></div>
+</div>
+
+<!-- STATS -->
+<div class="stats">
+  <div class="stat-card"><div class="stat-num" id="stat-total">0</div><div class="stat-label">Total Items</div></div>
+  <div class="stat-card"><div class="stat-num warn" id="stat-low">0</div><div class="stat-label">Low Stock (≤5)</div></div>
+  <div class="stat-card"><div class="stat-num danger" id="stat-out">0</div><div class="stat-label">Out of Stock</div></div>
+  <div class="stat-card"><div class="stat-num" id="stat-value">₱0</div><div class="stat-label">Inventory Value</div></div>
+</div>
+
+<!-- TABLE -->
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Item Code</th>
+        <th>Description</th>
+        <th>Category</th>
+        <th>Price</th>
+        <th>Unit</th>
+        <th>UOM</th>
+        <th>Beg. Bal.</th>
+        <th>Ending Stock</th>
+        <th>Status</th>
+        <th>Supplier</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="inv-tbody"></tbody>
+  </table>
+</div>
+
+<!-- ADD/EDIT MODAL -->
+<div class="modal-overlay" id="item-modal">
+  <div class="modal">
+    <h3 id="modal-title">➕ Add Inventory Item</h3>
+    <div class="form-grid">
+      <div class="form-group"><label>Item Code</label><input id="m-code" placeholder="e.g. G2G-001"></div>
+      <div class="form-group"><label>Category</label>
+        <input id="m-cat" list="cat-list" placeholder="e.g. Dairy" autocomplete="off">
+        <datalist id="cat-list"></datalist>
+      </div>
+      <div class="form-group full"><label>Item Description</label><input id="m-name" placeholder="e.g. Extra Virgin Olive Oil"></div>
+      <div class="form-group"><label>Price (₱)</label><input type="number" id="m-price" placeholder="0.00" min="0" step="0.01"></div>
+      <div class="form-group"><label>Supplier</label><input id="m-supplier" placeholder="e.g. ABC Trading"></div>
+      <div class="form-group"><label>Unit</label><input id="m-unit" placeholder="e.g. 1 box, 500g"></div>
+      <div class="form-group"><label>UOM</label><input id="m-uom" placeholder="e.g. pcs, kg, btl"></div>
+      <div class="form-group"><label>Beg. Bal. Stocks</label><input type="number" id="m-begbal" placeholder="0" min="0"></div>
+      <div class="form-group"><label>Ending Stocks</label><input type="number" id="m-ending" placeholder="0" min="0"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="m-save" onclick="saveItem()">💾 Save Item</button>
+      <button class="m-cancel" onclick="closeModal('item-modal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- SCRIPT SETTINGS MODAL -->
+<div class="modal-overlay" id="script-modal">
+  <div class="modal" style="max-width:500px">
+    <h3>⚙️ Google Apps Script URL</h3>
+    <p style="font-size:12px;color:#666;margin-bottom:14px">Paste your Google Apps Script deployment URL below. This connects the Inventory page to your Google Sheets database.</p>
+    <div class="form-group full" style="margin-bottom:12px">
+      <label>Apps Script URL</label>
+      <input id="script-url-input" placeholder="https://script.google.com/macros/s/.../exec"
+        style="font-size:11px;font-family:monospace;width:100%;border:2px solid #e0e8f5;border-radius:8px;padding:10px 12px;outline:none">
+    </div>
+    <div style="background:#f0f4fe;border-radius:8px;padding:12px;font-size:11px;color:#555;margin-bottom:14px;line-height:1.7">
+      <b style="color:#0B2545">How to get your URL:</b><br>
+      1. Go to <b>script.google.com</b><br>
+      2. Open your G2G POS project<br>
+      3. Click <b>Deploy → Manage deployments</b><br>
+      4. Copy the <b>/exec</b> URL<br>
+      5. Paste it above → Save
+    </div>
+    <div id="script-test-result" style="font-size:12px;font-weight:700;min-height:20px;margin-bottom:10px"></div>
+    <div class="modal-actions">
+      <button class="m-save" onclick="testAndSaveScript()">🔗 Test & Save</button>
+      <button class="m-cancel" onclick="closeModal('script-modal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Config ────────────────────────────────────────────────────────────────────
+// Google Apps Script URL — loaded from settings or default
+var SHEETS_URL = localStorage.getItem('gtg_sheets_url') ||
+  'https://script.google.com/macros/s/AKfycbxI74ANQbulTjXljEvp8xBGLu4Rtxv4Lcspho8P58XK763ABmW8OCDOp8vfZJBcmTYobA/exec';
+
+// ── State ─────────────────────────────────────────────────────────────────────
+var inventory = [];
+var editingId = null;
+var activeCat = 'All';
+var _online   = false;
+
+// ── Local Storage ─────────────────────────────────────────────────────────────
+function loadLocal(){
+  try{ var s=localStorage.getItem('gtg_stock_inventory'); if(s) inventory=JSON.parse(s)||[]; }catch(e){}
+  inventory = inventory.map(normalizeItem).filter(function(i){ return i.itemCode||i.description||i.category; });
+}
+function saveLocal(){ try{ localStorage.setItem('gtg_stock_inventory',JSON.stringify(inventory)); }catch(e){} }
+
+function normalizeItem(it,idx){
+  function g(keys){ for(var k=0;k<keys.length;k++){ var v=it[keys[k]]; if(v!==undefined&&v!==null&&String(v).trim()!=='') return String(v).trim(); } return ''; }
+  return {
+    id:          it.id || (idx+1),
+    itemCode:    g(['itemCode','ITEM CODE','item_code']),
+    description: g(['description','ITEM DESCRIPTION','name','Description']),
+    category:    g(['category','CATEGORY','cat','Category']),
+    price:       parseFloat(g(['price','PRICE','Price']))||0,
+    unit:        g(['unit','UNIT']),
+    uom:         g(['uom','UOM','Uom']),
+    begBal:      parseInt(g(['begBal','BEG BAL STOCKS','BEG BAL']))||0,
+    endingStock: parseInt(g(['endingStock','ENDING STOCKS','ENDING','stock']))||0,
+    supplier:    g(['supplier','SUPPLIER','Supplier'])
+  };
+}
+
+// ── Sheets API ────────────────────────────────────────────────────────────────
+function sheetsCall(action, body){
+  return new Promise(function(resolve){
+    var cb='cb_'+Date.now(), script=document.createElement('script');
+    var t=setTimeout(function(){ resolve(null); try{document.body.removeChild(script);}catch(e){} delete window[cb]; },15000);
+    window[cb]=function(d){ clearTimeout(t); resolve(d); try{document.body.removeChild(script);}catch(e){} delete window[cb]; };
+    var data = Object.assign({action:action}, body||{});
+    script.src=SHEETS_URL+'?action='+action+'&data='+encodeURIComponent(JSON.stringify(body||{}))+'&callback='+cb;
+    document.body.appendChild(script);
+  });
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', async function(){
+  // First time setup — prompt for URL if not saved
+  if(!localStorage.getItem('gtg_sheets_url')){
+    setTimeout(function(){
+      showToast('👆 Tap ⚙️ Script URL to connect Google Sheets','info');
+    }, 1000);
+  }
+  loadLocal();
+  renderTable();
+  setStatus('loading','Connecting…');
+  var ping = await sheetsCall('ping');
+  if(ping && ping.ok){
+    _online = true;
+    setStatus('connected','Google Sheets ✓');
+    showToast('✅ Connected! Importing inventory…','success');
+    await importFromSheets(true);
+  } else {
+    setStatus('disconnected','Offline — tap to retry');
+    showToast('⚠️ Cannot reach Sheets. Showing cached data.','warning');
+    renderTable();
+  }
+});
+
+// ── Import ────────────────────────────────────────────────────────────────────
+async function importFromSheets(silent){
+  if(!silent && !confirm('Replace local inventory with Google Sheets data?')) return;
+  showToast('⬇ Importing…','info');
+  var res = await sheetsCall('getInventory');
+  if(res && res.items && res.items.length){
+    inventory = res.items.map(normalizeItem).filter(function(i){ return i.itemCode||i.description||i.category; });
+    saveLocal(); renderTable();
+    if(!silent) showToast('✅ Imported '+inventory.length+' items!','success');
+    setStatus('connected','Google Sheets ✓');
+  } else {
+    if(!silent) showToast('⚠️ No data returned from Sheet.','warning');
+  }
+}
+
+// ── Backup ────────────────────────────────────────────────────────────────────
+async function backupToSheets(){
+  showToast('⬆ Saving to Sheet…','info');
+  var rows = inventory.map(function(i){ return {
+    itemCode:i.itemCode, description:i.description, category:i.category,
+    price:i.price, unit:i.unit, uom:i.uom, begBal:i.begBal, endingStock:i.endingStock, supplier:i.supplier
+  };});
+  var res = await sheetsCall('saveInventory',{items:rows});
+  if(res && res.ok) showToast('✅ Backed up '+rows.length+' items to Sheet!','success');
+  else showToast('❌ Backup failed — check connection.','error');
+}
+
+// ── Fix Sheet ─────────────────────────────────────────────────────────────────
+async function fixSheet(){
+  showToast('🔧 Cleaning blank rows…','info');
+  var res = await sheetsCall('cleanInventorySheet');
+  if(res && res.ok){ showToast('✅ Removed '+res.removed+' blank rows. Kept '+res.kept+'.','success'); await importFromSheets(true); }
+  else showToast('❌ Fix failed.','error');
+}
+
+// ── Save Item ─────────────────────────────────────────────────────────────────
+async function saveItem(){
+  var item = {
+    id:          editingId || Date.now(),
+    itemCode:    document.getElementById('m-code').value.trim(),
+    description: document.getElementById('m-name').value.trim(),
+    category:    document.getElementById('m-cat').value.trim(),
+    price:       parseFloat(document.getElementById('m-price').value)||0,
+    unit:        document.getElementById('m-unit').value.trim(),
+    uom:         document.getElementById('m-uom').value.trim(),
+    begBal:      parseInt(document.getElementById('m-begbal').value)||0,
+    endingStock: parseInt(document.getElementById('m-ending').value)||0,
+    supplier:    document.getElementById('m-supplier').value.trim()
+  };
+  if(!item.description && !item.itemCode){ showToast('Enter a description or item code.','error'); return; }
+  if(editingId){ inventory = inventory.map(function(i){ return i.id===editingId ? item : i; }); }
+  else         { inventory.push(item); }
+  saveLocal(); closeModal(); renderTable();
+  showToast((editingId?'✅ Item updated!':'✅ Item added!'),'success');
+  // Sync to Sheets
+  if(_online) await backupToSheets();
+}
+
+// ── Delete ────────────────────────────────────────────────────────────────────
+async function deleteItem(id){
+  if(!confirm('Delete this item?')) return;
+  inventory = inventory.filter(function(i){ return i.id!==id; });
+  saveLocal(); renderTable();
+  showToast('Item deleted.','success');
+  if(_online) await backupToSheets();
+}
+
+// ── Edit ──────────────────────────────────────────────────────────────────────
+function editItem(id){
+  var item = inventory.find(function(i){ return i.id===id; });
+  if(!item) return;
+  editingId = id;
+  document.getElementById('modal-title').textContent = '✏️ Edit Item';
+  document.getElementById('m-code').value     = item.itemCode||'';
+  document.getElementById('m-name').value     = item.description||'';
+  document.getElementById('m-cat').value      = item.category||'';
+  document.getElementById('m-price').value    = item.price||0;
+  document.getElementById('m-unit').value     = item.unit||'';
+  document.getElementById('m-uom').value      = item.uom||'';
+  document.getElementById('m-begbal').value   = item.begBal||0;
+  document.getElementById('m-ending').value   = item.endingStock||0;
+  document.getElementById('m-supplier').value = item.supplier||'';
+  openModal();
+}
+
+// ── Render ────────────────────────────────────────────────────────────────────
+function renderTable(){
+  var search = (document.getElementById('search')||{}).value||'';
+  var q = search.toLowerCase();
+  // Categories
+  var cats = ['All'].concat([...new Set(inventory.map(function(i){ return i.category||''; }).filter(Boolean))].sort());
+  var cf = document.getElementById('cat-filters');
+  if(cf) cf.innerHTML = cats.map(function(c){
+    return '<button class="cat-filter'+(c===activeCat?' active':'')+'" onclick="setCat(\''+c+'\')" >'+c+'</button>';
+  }).join('');
+  // Update datalist
+  var dl = document.getElementById('cat-list');
+  if(dl) dl.innerHTML = cats.slice(1).map(function(c){ return '<option>'+c+'</option>'; }).join('');
+  // Filter
+  var filtered = inventory.filter(function(i){
+    var matchCat = activeCat==='All' || i.category===activeCat;
+    var matchSearch = !q || (i.description||'').toLowerCase().includes(q) || (i.itemCode||'').toLowerCase().includes(q) || (i.category||'').toLowerCase().includes(q);
+    return matchCat && matchSearch;
+  });
+  // Stats
+  document.getElementById('stat-total').textContent = inventory.length;
+  document.getElementById('stat-low').textContent   = inventory.filter(function(i){ return i.endingStock>0&&i.endingStock<=5; }).length;
+  document.getElementById('stat-out').textContent   = inventory.filter(function(i){ return i.endingStock<=0; }).length;
+  var val = inventory.reduce(function(s,i){ return s+(i.price*i.endingStock); },0);
+  document.getElementById('stat-value').textContent = '₱'+val.toFixed(2);
+  // Rows
+  var tbody = document.getElementById('inv-tbody');
+  if(!filtered.length){
+    tbody.innerHTML='<tr><td colspan="11" class="empty"><div class="empty-icon">📦</div><p>No items found.</p></td></tr>';
+    return;
+  }
+  tbody.innerHTML = filtered.map(function(i){
+    var stock = i.endingStock||0;
+    var badge = stock<=0 ? '<span class="badge badge-out">Out of Stock</span>'
+               : stock<=5? '<span class="badge badge-low">Low Stock</span>'
+                          : '<span class="badge badge-ok">In Stock</span>';
+    var rowStyle = stock<=0 ? 'background:#fff5f5' : '';
+    return '<tr style="'+rowStyle+'">'
+      +'<td><b>'+( i.itemCode||'—')+'</b></td>'
+      +'<td>'+( i.description||'—')+'</td>'
+      +'<td>'+( i.category||'—')+'</td>'
+      +'<td>₱'+(i.price||0).toFixed(2)+'</td>'
+      +'<td>'+( i.unit||'—')+'</td>'
+      +'<td>'+( i.uom||'—')+'</td>'
+      +'<td>'+( i.begBal||0)+'</td>'
+      +'<td style="font-weight:800;color:'+(stock<=0?'#E74C3C':stock<=5?'#E67E22':'#27AE60')+'">'+stock+'</td>'
+      +'<td>'+badge+'</td>'
+      +'<td>'+( i.supplier||'—')+'</td>'
+      +'<td><div class="action-btns">'
+      +'<button class="icon-btn" style="background:#e8f0fe" onclick="editItem('+i.id+')" title="Edit">✏️</button>'
+      +'<button class="icon-btn" style="background:#fdecea" onclick="deleteItem('+i.id+')" title="Delete">🗑️</button>'
+      +'</div></td>'
+      +'</tr>';
+  }).join('');
+}
+
+function setCat(cat){ activeCat=cat; renderTable(); }
+
+// ── Script Settings ──────────────────────────────────────────────────────────
+function openScriptSettings(){
+  var el = document.getElementById('script-url-input');
+  if(el) el.value = SHEETS_URL || '';
+  document.getElementById('script-test-result').textContent = '';
+  document.getElementById('script-modal').classList.add('active');
+}
+
+async function testAndSaveScript(){
+  var url = (document.getElementById('script-url-input').value||'').trim();
+  var res_el = document.getElementById('script-test-result');
+  if(!url){ res_el.textContent = '❌ Please enter a URL.'; res_el.style.color='#E74C3C'; return; }
+  if(!url.includes('script.google.com')){ res_el.textContent = '❌ Invalid URL — must be a Google Apps Script URL.'; res_el.style.color='#E74C3C'; return; }
+  res_el.textContent = '⏳ Testing connection…'; res_el.style.color='#888';
+  // Test the URL
+  var result = await new Promise(function(resolve){
+    var cb='test_'+Date.now(), script=document.createElement('script');
+    var t=setTimeout(function(){ resolve(null); try{document.body.removeChild(script);}catch(e){} delete window[cb]; },10000);
+    window[cb]=function(d){ clearTimeout(t); resolve(d); try{document.body.removeChild(script);}catch(e){} delete window[cb]; };
+    script.src=url+'?action=ping&callback='+cb;
+    document.body.appendChild(script);
+  });
+  if(result && result.ok){
+    SHEETS_URL = url;
+    localStorage.setItem('gtg_sheets_url', url);
+    res_el.textContent = '✅ Connected! Saving…'; res_el.style.color='#27AE60';
+    setTimeout(function(){
+      closeModal('script-modal');
+      setStatus('connected','Google Sheets ✓');
+      showToast('✅ Script URL saved! Importing data…','success');
+      importFromSheets(true);
+    },1000);
+  } else {
+    res_el.textContent = '❌ Cannot connect. Check the URL and make sure it is deployed with "Anyone" access.';
+    res_el.style.color='#E74C3C';
+  }
+}
+
+function closeModal(id){ document.getElementById(id).classList.remove('active'); }
+
+// ── Modal ─────────────────────────────────────────────────────────────────────
+function openAddModal(){
+  editingId=null;
+  document.getElementById('modal-title').textContent='➕ Add Inventory Item';
+  ['m-code','m-name','m-cat','m-price','m-unit','m-uom','m-begbal','m-ending','m-supplier']
+    .forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
+  openModal();
+}
+function openModal(){ document.getElementById('item-modal').classList.add('active'); }
+function closeModal(id){ document.getElementById(id||'item-modal').classList.remove('active'); }
+
+// ── UI Helpers ────────────────────────────────────────────────────────────────
+function setStatus(state, msg){
+  var dot = document.getElementById('db-dot');
+  var txt = document.getElementById('db-txt');
+  var box = document.getElementById('db-status');
+  var colors = {connected:'#27AE60', disconnected:'#E74C3C', loading:'#F39C12'};
+  var col = colors[state] || '#F39C12';
+  if(dot){ dot.style.background=col; dot.style.boxShadow='0 0 8px '+col; }
+  if(txt){ txt.textContent=msg; txt.style.color=state==='connected'?'#4ade80':state==='disconnected'?'#f87171':'#fbbf24'; }
+  if(box){ box.style.borderColor=col+'55'; }
+  // Show item count when connected
+  var cnt = document.getElementById('db-count');
+  if(cnt && state==='connected') cnt.textContent = inventory.length + ' items loaded';
+}
+
+var _toastTimer;
+function showToast(msg, type){
+  var el=document.getElementById('toast');
+  if(!el) return;
+  el.textContent=msg; el.className='toast show '+(type||'');
+  clearTimeout(_toastTimer);
+  _toastTimer=setTimeout(function(){ el.className='toast'; },3500);
+}
+</script>
+</body>
+</html>
