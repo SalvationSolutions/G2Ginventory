@@ -134,11 +134,13 @@ tr:hover td{background:#f8faff}
     <h1>G2G TAVERNA — INVENTORY</h1>
   </div>
   <div style="display:flex;align-items:center;gap:8px">
+    <span id="user-badge" style="font-size:11px;color:rgba(255,255,255,.6);font-weight:700"></span>
     <div id="db-status" style="display:flex;align-items:center;gap:7px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:20px;padding:5px 13px;font-size:11px;font-weight:800;transition:.3s">
       <span id="db-dot" style="width:9px;height:9px;border-radius:50%;background:#F39C12;display:inline-block;transition:.3s;box-shadow:0 0 6px #F39C12"></span>
       <span id="db-txt">Connecting…</span>
     </div>
     <span id="db-count" style="font-size:11px;opacity:.5"></span>
+    <button onclick="doLogout()" style="background:rgba(231,76,60,.15);border:1px solid rgba(231,76,60,.4);color:#E74C3C;border-radius:8px;padding:5px 12px;font-size:11px;font-weight:800;cursor:pointer">🚪 Logout</button>
   </div>
 </div>
 
@@ -281,6 +283,7 @@ function doLogin(){
   // Update header with user info
   var userBadge = document.getElementById('user-badge');
   if(userBadge) userBadge.textContent = '👤 '+found.username+' ('+found.role+')';
+  document.getElementById('login-pass').value = '';
   // Init app
   initApp();
 }
@@ -488,6 +491,18 @@ function renderTable(){
 }
 
 function setCat(cat){ activeCat=cat; renderTable(); }
+
+// ── Logout ───────────────────────────────────────────────────────────────────
+function doLogout(){
+  if(!confirm('Logout from Inventory?')) return;
+  currentUser = null;
+  document.getElementById('main-app').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('login-user').value = '';
+  document.getElementById('login-pass').value = '';
+  document.getElementById('login-error').textContent = '';
+  document.getElementById('user-badge').textContent = '';
+}
 
 // ── Script Settings ──────────────────────────────────────────────────────────
 function openScriptSettings(){
