@@ -148,6 +148,7 @@ tr:hover td{background:#f8faff}
 <div class="toolbar">
   <h2>📦 Inventory Management</h2>
   <button class="btn btn-dark" onclick="importFromSheets()">⬇ Import from Sheet</button>
+  <button class="btn btn-outline" id="refresh-inventory-btn" onclick="refreshInventory()">↻ Refresh</button>
   <button class="btn btn-green" onclick="backupToSheets()">⬆ Backup to Sheet</button>
   <button class="btn btn-red" onclick="fixSheet()">🔧 Fix Sheet</button>
   <button class="btn btn-primary" onclick="openAddModal()">+ Add Item</button>
@@ -428,6 +429,43 @@ async function initApp(){
     setStatus('disconnected','Offline — tap to retry');
     showToast('⚠️ Cannot reach Google Sheets. Inventory was not loaded locally.','warning');
     renderTable();
+  }
+}
+
+// ── Refresh inventory from Google Sheets ───────────────────────────────────────
+async function refreshInventory(){
+  var btn = document.getElementById('refresh-inventory-btn');
+  if(btn){
+    btn.disabled = true;
+    btn.innerHTML = '⟳ Refreshing…';
+    btn.style.opacity = '.7';
+  }
+  try{
+    showToast('🔄 Refreshing inventory from Google Sheets…','info');
+    setStatus('loading','Refreshing…');
+    var res = await sheetsCall('getInventory');
+    if(res && res.ok && Array.isArray(res.items)){
+      inventory = res.items.map(normalizeItem).filter(function(i){
+        return i.itemCode || i.description || i.category;
+      });
+      renderTable();
+      setStatus('connected','Google Sheets ✓');
+      showToast('✅ Inventory refreshed — '+inventory.length+' items loaded.','success');
+      return true;
+    }
+    setStatus('disconnected','Refresh failed');
+    showToast('❌ Refresh failed — no inventory data returned.','error');
+    return false;
+  }catch(e){
+    setStatus('disconnected','Refresh failed');
+    showToast('❌ Refresh failed: '+(e.message||'Connection error'),'error');
+    return false;
+  }finally{
+    if(btn){
+      btn.disabled = false;
+      btn.innerHTML = '↻ Refresh';
+      btn.style.opacity = '1';
+    }
   }
 }
 
