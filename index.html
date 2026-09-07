@@ -151,6 +151,8 @@ tr:hover td{background:#f8faff}
   <button class="btn btn-green" onclick="backupToSheets()">⬆ Backup to Sheet</button>
   <button class="btn btn-red" onclick="fixSheet()">🔧 Fix Sheet</button>
   <button class="btn btn-primary" onclick="openAddModal()">+ Add Item</button>
+  <button class="btn btn-outline" onclick="retryPendingWrites()" id="retry-sync-btn" style="display:none">🔄 Retry Sync</button>
+  <span id="sync-retry-status" style="font-size:11px;font-weight:800;color:#E67E22;display:none"></span>
   <button class="btn" style="background:#555;color:#fff" onclick="openScriptSettings()">⚙️ Script URL</button>
 </div>
 
@@ -248,6 +250,7 @@ tr:hover td{background:#f8faff}
 <script>
 // ── Config ────────────────────────────────────────────────────────────────────
 // Google Apps Script URL — loaded from settings or default
+try{localStorage.removeItem('gtg_stock_inventory');}catch(e){}
 var SHEETS_URL = localStorage.getItem('gtg_sheets_url') ||
   'https://script.google.com/macros/s/AKfycbxI74ANQbulTjXljEvp8xBGLu4Rtxv4Lcspho8P58XK763ABmW8OCDOp8vfZJBcmTYobA/exec';
 
@@ -288,12 +291,13 @@ function doLogin(){
   initApp();
 }
 
-// ── Local Storage ─────────────────────────────────────────────────────────────
-function loadLocal(){
-  try{ var s=localStorage.getItem('gtg_stock_inventory'); if(s) inventory=JSON.parse(s)||[]; }catch(e){}
-  inventory = inventory.map(normalizeItem).filter(function(i){ return i.itemCode||i.description||i.category; });
-}
-function saveLocal(){ try{ localStorage.setItem('gtg_stock_inventory',JSON.stringify(inventory)); }catch(e){} }
+// ── Google Sheets is the only inventory source of truth ─────────────────────
+function loadLocal(){ inventory=[]; }
+function saveLocal(){ return false; }
+var _pendingInventory=null;
+var _retryTimer=null;
+var _retryAttempt=0;
+var _retryRunning=false;
 
 function normalizeItem(it,idx){
   function g(keys){ for(var k=0;k<keys.length;k++){ var v=it[keys[k]]; if(v!==undefined&&v!==null&&String(v).trim()!=='') return String(v).trim(); } return ''; }
@@ -314,13 +318,43 @@ function normalizeItem(it,idx){
 // ── Sheets API ────────────────────────────────────────────────────────────────
 function sheetsCall(action, body){
   return new Promise(function(resolve){
-    var cb='cb_'+Date.now(), script=document.createElement('script');
-    var t=setTimeout(function(){ resolve(null); try{document.body.removeChild(script);}catch(e){} delete window[cb]; },15000);
-    window[cb]=function(d){ clearTimeout(t); resolve(d); try{document.body.removeChild(script);}catch(e){} delete window[cb]; };
-    var data = Object.assign({action:action}, body||{});
-    script.src=SHEETS_URL+'?action='+action+'&data='+encodeURIComponent(JSON.stringify(body||{}))+'&callback='+cb;
+    if(!SHEETS_URL){ resolve(null); return; }
+    var cb='cb_'+Date.now()+'_'+Math.random().toString(36).slice(2), script=document.createElement('script');
+    var done=false;
+    var t=setTimeout(function(){ if(done)return; done=true; resolve(null); try{document.body.removeChild(script);}catch(e){} delete window[cb]; },15000);
+    window[cb]=function(d){ if(done)return; done=true; clearTimeout(t); resolve(d); try{document.body.removeChild(script);}catch(e){} delete window[cb]; };
+    script.onerror=function(){ if(done)return; done=true; clearTimeout(t); resolve(null); try{document.body.removeChild(script);}catch(e){} delete window[cb]; };
+    script.src=SHEETS_URL+'?action='+encodeURIComponent(action)+'&data='+encodeURIComponent(JSON.stringify(body||{}))+'&callback='+cb;
     document.body.appendChild(script);
   });
+}
+function scheduleRetry(){
+  if(!_pendingInventory || _retryTimer || _retryRunning) return;
+  var delay=Math.min(60000,5000*Math.pow(2,Math.min(_retryAttempt,4)));
+  var status=document.getElementById('sync-retry-status'), btn=document.getElementById('retry-sync-btn');
+  if(status){status.style.display='inline';status.textContent='Retry in '+Math.ceil(delay/1000)+'s';}
+  if(btn) btn.style.display='inline-flex';
+  _retryTimer=setTimeout(function(){_retryTimer=null;retryPendingWrites(true);},delay);
+}
+async function retryPendingWrites(silent){
+  if(!_pendingInventory || _retryRunning) return false;
+  _retryRunning=true;
+  var status=document.getElementById('sync-retry-status');
+  if(status){status.style.display='inline';status.textContent='Retrying…';}
+  var candidate=_pendingInventory;
+  var ok=await backupToSheets(candidate,true);
+  _retryRunning=false;
+  if(ok){
+    inventory=candidate; _pendingInventory=null; _retryAttempt=0; renderTable();
+    var btn=document.getElementById('retry-sync-btn'); if(btn) btn.style.display='none';
+    if(status){status.style.display='none';status.textContent='';}
+    if(!silent) showToast('✅ Inventory sync recovered.','success');
+    return true;
+  }
+  _retryAttempt++;
+  scheduleRetry();
+  if(!silent) showToast('❌ Sync still failing. Will retry again.','error');
+  return false;
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
@@ -333,7 +367,7 @@ async function initApp(){
   if(!localStorage.getItem('gtg_sheets_url')){
     setTimeout(function(){ showToast('👆 Tap ⚙️ Script URL to connect Google Sheets','info'); },800);
   }
-  loadLocal();
+  inventory=[];
   renderTable();
   setStatus('loading','Connecting…');
   var ping = await sheetsCall('ping');
@@ -344,7 +378,7 @@ async function initApp(){
     await importFromSheets(true);
   } else {
     setStatus('disconnected','Offline — tap to retry');
-    showToast('⚠️ Cannot reach Sheets. Showing cached data.','warning');
+    showToast('⚠️ Cannot reach Google Sheets. Inventory was not loaded locally.','warning');
     renderTable();
   }
 }
@@ -356,7 +390,7 @@ async function importFromSheets(silent){
   var res = await sheetsCall('getInventory');
   if(res && res.items && res.items.length){
     inventory = res.items.map(normalizeItem).filter(function(i){ return i.itemCode||i.description||i.category; });
-    saveLocal(); renderTable();
+    renderTable();
     if(!silent) showToast('✅ Imported '+inventory.length+' items!','success');
     setStatus('connected','Google Sheets ✓');
   } else {
@@ -365,15 +399,23 @@ async function importFromSheets(silent){
 }
 
 // ── Backup ────────────────────────────────────────────────────────────────────
-async function backupToSheets(){
-  showToast('⬆ Saving to Sheet…','info');
-  var rows = inventory.map(function(i){ return {
-    itemCode:i.itemCode, description:i.description, category:i.category,
-    price:i.price, unit:i.unit, uom:i.uom, begBal:i.begBal, endingStock:i.endingStock, supplier:i.supplier
-  };});
-  var res = await sheetsCall('saveInventory',{items:rows});
-  if(res && res.ok) showToast('✅ Backed up '+rows.length+' items to Sheet!','success');
-  else showToast('❌ Backup failed — check connection.','error');
+async function backupToSheets(nextInventory, silent){
+  var source=Array.isArray(nextInventory)?nextInventory:inventory;
+  if(!SHEETS_URL){ if(!silent) showToast('❌ Google Sheets URL is not configured. Nothing was saved.','error'); return false; }
+  if(!source.length){ if(!silent) showToast('⚠️ Add at least one item before saving.','warning'); return false; }
+  if(!silent) showToast('⬆ Saving '+source.length+' item(s) to Google Sheets…','info');
+  var rows=source.map(function(i){ return {itemCode:i.itemCode,description:i.description,category:i.category,price:i.price,unit:i.unit,uom:i.uom,begBal:i.begBal,endingStock:i.endingStock,supplier:i.supplier}; });
+  var res=await sheetsCall('saveInventory',{items:rows});
+  if(res && res.ok){
+    _online=true; setStatus('connected','Google Sheets ✓');
+    if(!silent) showToast('✅ Saved '+rows.length+' item(s) to Google Sheets!','success');
+    return true;
+  }
+  _online=false; setStatus('disconnected','Sync failed — retry pending');
+  _pendingInventory=source.map(function(i){return Object.assign({},i);});
+  scheduleRetry();
+  if(!silent) showToast('❌ Google Sheets save failed. Nothing was saved locally.','error');
+  return false;
 }
 
 // ── Fix Sheet ─────────────────────────────────────────────────────────────────
@@ -386,34 +428,24 @@ async function fixSheet(){
 
 // ── Save Item ─────────────────────────────────────────────────────────────────
 async function saveItem(){
-  var item = {
-    id:          editingId || Date.now(),
-    itemCode:    document.getElementById('m-code').value.trim(),
-    description: document.getElementById('m-name').value.trim(),
-    category:    document.getElementById('m-cat').value.trim(),
-    price:       parseFloat(document.getElementById('m-price').value)||0,
-    unit:        document.getElementById('m-unit').value.trim(),
-    uom:         document.getElementById('m-uom').value.trim(),
-    begBal:      parseInt(document.getElementById('m-begbal').value)||0,
-    endingStock: parseInt(document.getElementById('m-ending').value)||0,
-    supplier:    document.getElementById('m-supplier').value.trim()
-  };
-  if(!item.description && !item.itemCode){ showToast('Enter a description or item code.','error'); return; }
-  if(editingId){ inventory = inventory.map(function(i){ return i.id===editingId ? item : i; }); }
-  else         { inventory.push(item); }
-  saveLocal(); closeModal(); renderTable();
-  showToast((editingId?'✅ Item updated!':'✅ Item added!'),'success');
-  // Sync to Sheets
-  if(_online) await backupToSheets();
+  var item={id:editingId||Date.now(),itemCode:document.getElementById('m-code').value.trim(),description:document.getElementById('m-name').value.trim(),category:document.getElementById('m-cat').value.trim(),price:parseFloat(document.getElementById('m-price').value)||0,unit:document.getElementById('m-unit').value.trim(),uom:document.getElementById('m-uom').value.trim(),begBal:parseInt(document.getElementById('m-begbal').value)||0,endingStock:parseInt(document.getElementById('m-ending').value)||0,supplier:document.getElementById('m-supplier').value.trim()};
+  if(!item.description&&!item.itemCode){showToast('Enter a description or item code.','error');return;}
+  var candidate=inventory.map(function(i){return Object.assign({},i);});
+  if(editingId) candidate=candidate.map(function(i){return i.id===editingId?item:i;}); else candidate.push(item);
+  var ok=await backupToSheets(candidate,false);
+  if(!ok) return;
+  inventory=candidate; closeModal(); renderTable();
+  showToast(editingId?'✅ Item updated!':'✅ Item added!','success');
 }
 
 // ── Delete ────────────────────────────────────────────────────────────────────
 async function deleteItem(id){
-  if(!confirm('Delete this item?')) return;
-  inventory = inventory.filter(function(i){ return i.id!==id; });
-  saveLocal(); renderTable();
-  showToast('Item deleted.','success');
-  if(_online) await backupToSheets();
+  if(!confirm('Delete this item from Google Sheets?')) return;
+  var candidate=inventory.filter(function(i){return i.id!==id;});
+  if(!candidate.length){showToast('At least one item must remain for a Sheets save.','warning');return;}
+  var ok=await backupToSheets(candidate,false);
+  if(!ok) return;
+  inventory=candidate; renderTable(); showToast('✅ Item deleted from Google Sheets.','success');
 }
 
 // ── Edit ──────────────────────────────────────────────────────────────────────
