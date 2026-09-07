@@ -316,14 +316,27 @@ function normalizeItem(it,idx){
 }
 
 // ── Sheets API ────────────────────────────────────────────────────────────────
+// Reads use JSONP. Large writes use POST so 89+ inventory rows do not exceed
+// browser/Google Apps Script URL limits.
 function sheetsCall(action, body){
-  return new Promise(function(resolve){
+  return new Promise(async function(resolve){
     if(!SHEETS_URL){ resolve(null); return; }
-    var cb='cb_'+Date.now()+'_'+Math.random().toString(36).slice(2), script=document.createElement('script');
-    var done=false;
-    var t=setTimeout(function(){ if(done)return; done=true; resolve(null); try{document.body.removeChild(script);}catch(e){} delete window[cb]; },15000);
-    window[cb]=function(d){ if(done)return; done=true; clearTimeout(t); resolve(d); try{document.body.removeChild(script);}catch(e){} delete window[cb]; };
-    script.onerror=function(){ if(done)return; done=true; clearTimeout(t); resolve(null); try{document.body.removeChild(script);}catch(e){} delete window[cb]; };
+    var payload=JSON.stringify(Object.assign({action:action},body||{}));
+    if(encodeURIComponent(payload).length>1800){
+      try{
+        var ctrl=new AbortController();
+        var timer=setTimeout(function(){ctrl.abort();},20000);
+        var response=await fetch(SHEETS_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:payload,signal:ctrl.signal});
+        clearTimeout(timer);
+        if(!response.ok){ resolve(null); return; }
+        resolve(await response.json());
+        return;
+      }catch(e){ resolve(null); return; }
+    }
+    var cb='cb_'+Date.now()+'_'+Math.random().toString(36).slice(2), script=document.createElement('script'), done=false;
+    var t=setTimeout(function(){if(done)return;done=true;resolve(null);try{document.body.removeChild(script);}catch(e){}delete window[cb];},15000);
+    window[cb]=function(d){if(done)return;done=true;clearTimeout(t);resolve(d);try{document.body.removeChild(script);}catch(e){}delete window[cb];};
+    script.onerror=function(){if(done)return;done=true;clearTimeout(t);resolve(null);try{document.body.removeChild(script);}catch(e){}delete window[cb];};
     script.src=SHEETS_URL+'?action='+encodeURIComponent(action)+'&data='+encodeURIComponent(JSON.stringify(body||{}))+'&callback='+cb;
     document.body.appendChild(script);
   });
@@ -414,7 +427,7 @@ async function backupToSheets(nextInventory, silent){
   _online=false; setStatus('disconnected','Sync failed — retry pending');
   _pendingInventory=source.map(function(i){return Object.assign({},i);});
   scheduleRetry();
-  if(!silent) showToast('❌ Google Sheets save failed. Nothing was saved locally.','error');
+  if(!silent) showToast('❌ Google Sheets save failed. Large writes now use POST; check the Apps Script deployment and retry.','error');
   return false;
 }
 
