@@ -417,18 +417,39 @@ async function backupToSheets(nextInventory, silent){
   if(!SHEETS_URL){ if(!silent) showToast('❌ Google Sheets URL is not configured. Nothing was saved.','error'); return false; }
   if(!source.length){ if(!silent) showToast('⚠️ Add at least one item before saving.','warning'); return false; }
   if(!silent) showToast('⬆ Saving '+source.length+' item(s) to Google Sheets…','info');
-  var rows=source.map(function(i){ return {itemCode:i.itemCode,description:i.description,category:i.category,price:i.price,unit:i.unit,uom:i.uom,begBal:i.begBal,endingStock:i.endingStock,supplier:i.supplier}; });
-  var res=await sheetsCall('saveInventory',{items:rows});
-  if(res && res.ok){
+
+  // IMPORTANT: Google Apps Script web-app POST responses can be blocked by
+  // browser CORS/redirect handling. Use small JSONP GET chunks instead.
+  // This keeps every request below URL limits and works from GitHub Pages.
+  var rows=source.map(function(i){
+    return {
+      itemCode:i.itemCode, description:i.description, category:i.category,
+      price:i.price, unit:i.unit, uom:i.uom, begBal:i.begBal,
+      endingStock:i.endingStock, supplier:i.supplier
+    };
+  });
+
+  var CHUNK=6;
+  try{
+    for(var start=0; start<rows.length; start+=CHUNK){
+      var chunk=rows.slice(start,start+CHUNK);
+      var res=await sheetsCall('saveInventoryChunk',{
+        items:chunk,
+        reset:(start===0),
+        finalize:(start+CHUNK>=rows.length)
+      });
+      if(!res || !res.ok) throw new Error((res&&res.error)||'No response from Apps Script');
+    }
     _online=true; setStatus('connected','Google Sheets ✓');
     if(!silent) showToast('✅ Saved '+rows.length+' item(s) to Google Sheets!','success');
     return true;
+  }catch(e){
+    _online=false; setStatus('disconnected','Sync failed — retry pending');
+    _pendingInventory=source.map(function(i){return Object.assign({},i);});
+    scheduleRetry();
+    if(!silent) showToast('❌ Save failed: '+(e.message||'Connection error')+'. Will retry.','error');
+    return false;
   }
-  _online=false; setStatus('disconnected','Sync failed — retry pending');
-  _pendingInventory=source.map(function(i){return Object.assign({},i);});
-  scheduleRetry();
-  if(!silent) showToast('❌ Google Sheets save failed. Large writes now use POST; check the Apps Script deployment and retry.','error');
-  return false;
 }
 
 // ── Fix Sheet ─────────────────────────────────────────────────────────────────
