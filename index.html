@@ -8,12 +8,16 @@
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Nunito:wght@400;600;700;800;900&display=swap');
 *{box-sizing:border-box;margin:0;padding:0}
 :root{--blue:#0B2545;--accent:#3A6BC5;--gold:#C9A227;--green:#27AE60;--red:#E74C3C;--gray:#f5f7fa;--border:#e0e8f5}
-body{font-family:Nunito,sans-serif;background:var(--gray);color:#1a1a2e;min-height:100vh}
+html{-webkit-text-size-adjust:100%}
+body{font-family:Nunito,sans-serif;background:var(--gray);color:#1a1a2e;min-height:100vh;min-height:100dvh}
+button,input,select{font:inherit}
+button{touch-action:manipulation}
 
 /* HEADER */
-.header{background:var(--blue);color:#fff;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px}
-.header-title{display:flex;align-items:center;gap:10px}
-.header-title h1{font-family:Cinzel,serif;font-size:16px;letter-spacing:1px}
+.header{background:var(--blue);color:#fff;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.header-title{display:flex;align-items:center;gap:10px;min-width:0}
+.header-title h1{font-family:Cinzel,serif;font-size:16px;letter-spacing:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.header-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .db-status{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;background:rgba(255,255,255,.1)}
 .db-dot{width:8px;height:8px;border-radius:50%;background:#888;flex-shrink:0}
 .db-status.connected{background:rgba(39,174,96,.15);border:1px solid rgba(39,174,96,.3)}
@@ -27,31 +31,33 @@ body{font-family:Nunito,sans-serif;background:var(--gray);color:#1a1a2e;min-heig
 /* TOOLBAR */
 .toolbar{padding:14px 20px;background:#fff;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .toolbar h2{font-family:Cinzel,serif;font-size:18px;color:var(--blue);margin-right:auto}
-.btn{padding:8px 16px;border:none;border-radius:8px;font-family:Nunito,sans-serif;font-weight:800;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:5px;transition:.2s}
+.btn{padding:9px 16px;border:none;border-radius:8px;font-family:Nunito,sans-serif;font-weight:800;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:5px;transition:.2s;min-height:38px;white-space:nowrap}
 .btn-primary{background:var(--accent);color:#fff}
 .btn-green{background:var(--green);color:#fff}
 .btn-red{background:var(--red);color:#fff}
 .btn-dark{background:var(--blue);color:#fff}
 .btn-outline{background:#fff;color:var(--accent);border:2px solid var(--accent)}
 .btn:hover{opacity:.85}
+.btn:active{transform:scale(.97)}
 
 /* SEARCH + FILTERS */
 .controls{padding:12px 20px;background:#fff;border-bottom:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-.search-box{flex:1;min-width:200px;padding:9px 14px;border:2px solid var(--border);border-radius:8px;font-family:Nunito,sans-serif;font-size:13px;outline:none}
+.search-box{flex:1;min-width:200px;padding:10px 14px;border:2px solid var(--border);border-radius:8px;font-family:Nunito,sans-serif;font-size:16px;outline:none}
 .search-box:focus{border-color:var(--accent)}
-.cat-filter{padding:6px 14px;border:2px solid var(--border);border-radius:20px;font-family:Nunito,sans-serif;font-size:11px;font-weight:700;cursor:pointer;background:#fff;color:#555;transition:.15s}
+#cat-filters{display:flex;gap:8px;flex-wrap:wrap;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:2px}
+.cat-filter{padding:7px 14px;border:2px solid var(--border);border-radius:20px;font-family:Nunito,sans-serif;font-size:11px;font-weight:700;cursor:pointer;background:#fff;color:#555;transition:.15s;flex-shrink:0}
 .cat-filter.active{background:var(--accent);border-color:var(--accent);color:#fff}
 
 /* STATS */
 .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:16px 20px}
-.stat-card{background:#fff;border-radius:12px;padding:16px;border:1px solid var(--border);text-align:center}
-.stat-num{font-size:28px;font-weight:900;color:var(--blue)}
+.stat-card{background:#fff;border-radius:12px;padding:16px;border:1px solid var(--border);text-align:center;min-width:0}
+.stat-num{font-size:28px;font-weight:900;color:var(--blue);word-break:break-word}
 .stat-num.warn{color:#E67E22}
 .stat-num.danger{color:var(--red)}
 .stat-label{font-size:11px;color:#888;font-weight:700;text-transform:uppercase;margin-top:4px}
 
 /* TABLE */
-.table-wrap{padding:0 20px 20px;overflow-x:auto}
+.table-wrap{padding:0 20px 20px;overflow-x:auto;-webkit-overflow-scrolling:touch}
 table{width:100%;border-collapse:collapse;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06)}
 th{background:var(--blue);color:#fff;padding:10px 14px;font-size:11px;text-align:left;white-space:nowrap}
 td{padding:10px 14px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle}
@@ -61,24 +67,25 @@ tr:hover td{background:#f8faff}
 .badge-ok{background:#e8f5e9;color:#27AE60}
 .badge-low{background:#fff3e0;color:#E67E22}
 .badge-out{background:#fdecea;color:var(--red)}
-.action-btns{display:flex;gap:4px}
-.icon-btn{width:30px;height:30px;border:none;border-radius:6px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:.15s}
+.action-btns{display:flex;gap:6px}
+.icon-btn{width:34px;height:34px;border:none;border-radius:6px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;transition:.15s}
 .icon-btn:hover{opacity:.75}
+.icon-btn:active{transform:scale(.93)}
 
 /* MODAL */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:999;padding:20px}
 .modal-overlay.active{display:flex}
-.modal{background:#fff;border-radius:16px;padding:24px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto}
+.modal{background:#fff;border-radius:16px;padding:24px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;-webkit-overflow-scrolling:touch}
 .modal h3{font-family:Cinzel,serif;font-size:17px;color:var(--blue);margin-bottom:18px}
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.form-group{display:flex;flex-direction:column;gap:4px}
+.form-group{display:flex;flex-direction:column;gap:4px;min-width:0}
 .form-group.full{grid-column:1/-1}
 .form-group label{font-size:11px;font-weight:800;color:var(--blue);text-transform:uppercase;letter-spacing:.4px}
-.form-group input,.form-group select{border:2px solid var(--border);border-radius:8px;padding:9px 12px;font-family:Nunito,sans-serif;font-size:13px;outline:none}
+.form-group input,.form-group select{border:2px solid var(--border);border-radius:8px;padding:10px 12px;font-family:Nunito,sans-serif;font-size:16px;outline:none;width:100%}
 .form-group input:focus{border-color:var(--accent)}
 .modal-actions{display:flex;gap:8px;margin-top:18px}
-.m-save{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:11px 20px;font-family:Nunito,sans-serif;font-weight:800;font-size:13px;cursor:pointer;flex:1}
-.m-cancel{background:var(--gray);color:#555;border:2px solid var(--border);border-radius:8px;padding:11px 20px;font-family:Nunito,sans-serif;font-weight:800;font-size:13px;cursor:pointer}
+.m-save{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:12px 20px;font-family:Nunito,sans-serif;font-weight:800;font-size:14px;cursor:pointer;flex:1}
+.m-cancel{background:var(--gray);color:#555;border:2px solid var(--border);border-radius:8px;padding:12px 20px;font-family:Nunito,sans-serif;font-weight:800;font-size:14px;cursor:pointer}
 
 /* TOAST */
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a2e;color:#fff;padding:11px 22px;border-radius:20px;font-size:13px;font-weight:700;z-index:9999;opacity:0;transition:.3s;pointer-events:none;white-space:nowrap}
@@ -93,19 +100,67 @@ tr:hover td{background:#f8faff}
 .login-icon{font-size:52px;margin-bottom:8px}
 .login-card h1{font-family:Cinzel,serif;font-size:18px;color:#0B2545;margin-bottom:4px}
 .login-card p{font-size:12px;color:#888;margin-bottom:24px}
-.login-input{width:100%;border:2px solid #e0e8f5;border-radius:10px;padding:11px 14px;font-family:Nunito,sans-serif;font-size:14px;outline:none;margin-bottom:10px;text-align:center}
+.login-input{width:100%;border:2px solid #e0e8f5;border-radius:10px;padding:12px 14px;font-family:Nunito,sans-serif;font-size:16px;outline:none;margin-bottom:10px;text-align:center}
 .login-input:focus{border-color:#3A6BC5}
-.login-btn{width:100%;background:linear-gradient(135deg,#0B2545,#3A6BC5);color:#fff;border:none;border-radius:10px;padding:13px;font-family:Nunito,sans-serif;font-weight:900;font-size:14px;cursor:pointer;margin-top:4px}
+.login-btn{width:100%;background:linear-gradient(135deg,#0B2545,#3A6BC5);color:#fff;border:none;border-radius:10px;padding:14px;font-family:Nunito,sans-serif;font-weight:900;font-size:14px;cursor:pointer;margin-top:4px}
 .login-error{color:#E74C3C;font-size:12px;font-weight:700;min-height:20px;margin-bottom:8px}
 
 /* EMPTY */
 .empty{text-align:center;padding:60px 20px;color:#aaa}
 .empty-icon{font-size:48px;margin-bottom:12px}
 
-@media(max-width:600px){
-  .stats{grid-template-columns:1fr 1fr}
-  .form-grid{grid-template-columns:1fr}
+/* ── RESPONSIVE ─────────────────────────────────────────────────────────── */
+
+/* Tablets and small laptops */
+@media(max-width:900px){
+  .header,.toolbar,.controls{padding-left:16px;padding-right:16px}
+  .stats{padding-left:16px;padding-right:16px}
+  .table-wrap{padding-left:16px;padding-right:16px}
+}
+
+/* Phones */
+@media(max-width:700px){
+  .header{padding:10px 14px}
+  .header-title h1{font-size:14px}
+  .header-title span{font-size:20px!important}
+  #db-count{display:none}
+  .toolbar{padding:12px 14px}
+  .toolbar h2{width:100%;margin-right:0;margin-bottom:2px;font-size:16px}
+  .btn{flex:1 1 auto;justify-content:center;padding:10px 10px;font-size:11.5px}
+  .controls{padding:10px 14px}
+  .search-box{min-width:100%}
+  .stats{grid-template-columns:1fr 1fr;gap:10px;padding:12px 14px}
+  .stat-card{padding:12px}
+  .stat-num{font-size:22px}
+  .table-wrap{padding:0 14px 14px}
+
+  /* Card-style table: headers hidden, each row becomes a card */
+  .table-wrap table,.table-wrap thead,.table-wrap tbody,.table-wrap th,.table-wrap td,.table-wrap tr{display:block}
+  .table-wrap thead{position:absolute;top:-9999px;left:-9999px}
+  table{box-shadow:none;background:none;border-radius:0}
+  .table-wrap tbody tr{background:#fff;border:1px solid var(--border);border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,.06);margin-bottom:10px;padding:4px 0}
+  .table-wrap tbody tr:last-child{margin-bottom:0}
+  .table-wrap td{border-bottom:1px solid var(--border);padding:9px 12px 9px 46%;position:relative;text-align:right;min-height:20px}
+  .table-wrap td:last-child{border-bottom:none}
+  .table-wrap td:before{content:attr(data-label);position:absolute;left:12px;top:9px;width:42%;text-align:left;font-weight:800;color:var(--blue);font-size:10.5px;text-transform:uppercase;letter-spacing:.3px;white-space:normal}
+  .table-wrap td.td-actions{text-align:left;padding-left:12px}
+  .table-wrap td.td-actions:before{content:none}
+  .table-wrap .action-btns{justify-content:flex-start}
+  .empty{padding:40px 14px}
+
+  .modal{padding:18px;border-radius:14px}
+  .form-grid{grid-template-columns:1fr;gap:12px}
   .form-group.full{grid-column:1}
+  .modal-actions{position:sticky;bottom:0;background:#fff;padding-top:8px;margin-top:14px}
+
+  .login-card{padding:28px 22px}
+}
+
+/* Very small phones */
+@media(max-width:380px){
+  .stats{grid-template-columns:1fr 1fr}
+  .btn{font-size:11px;padding:9px 8px}
+  .header-title h1{font-size:12px}
 }
 </style>
 </head>
@@ -133,14 +188,14 @@ tr:hover td{background:#f8faff}
     <span style="font-size:24px">📦</span>
     <h1>G2G TAVERNA — INVENTORY</h1>
   </div>
-  <div style="display:flex;align-items:center;gap:8px">
+  <div class="header-right">
     <span id="user-badge" style="font-size:11px;color:rgba(255,255,255,.6);font-weight:700"></span>
     <div id="db-status" style="display:flex;align-items:center;gap:7px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:20px;padding:5px 13px;font-size:11px;font-weight:800;transition:.3s">
-      <span id="db-dot" style="width:9px;height:9px;border-radius:50%;background:#F39C12;display:inline-block;transition:.3s;box-shadow:0 0 6px #F39C12"></span>
+      <span id="db-dot" style="width:9px;height:9px;border-radius:50%;background:#F39C12;display:inline-block;transition:.3s;box-shadow:0 0 6px #F39C12;flex-shrink:0"></span>
       <span id="db-txt">Connecting…</span>
     </div>
     <span id="db-count" style="font-size:11px;opacity:.5"></span>
-    <button onclick="doLogout()" style="background:rgba(231,76,60,.15);border:1px solid rgba(231,76,60,.4);color:#E74C3C;border-radius:8px;padding:5px 12px;font-size:11px;font-weight:800;cursor:pointer">🚪 Logout</button>
+    <button onclick="doLogout()" style="background:rgba(231,76,60,.15);border:1px solid rgba(231,76,60,.4);color:#E74C3C;border-radius:8px;padding:7px 12px;font-size:11px;font-weight:800;cursor:pointer;min-height:34px">🚪 Logout</button>
   </div>
 </div>
 
@@ -154,7 +209,6 @@ tr:hover td{background:#f8faff}
   <button class="btn btn-primary" onclick="openAddModal()">+ Add Item</button>
   <button class="btn btn-outline" onclick="retryPendingWrites()" id="retry-sync-btn" style="display:none">🔄 Retry Sync</button>
   <span id="sync-retry-status" style="font-size:11px;font-weight:800;color:#E67E22;display:none"></span>
-  <button class="btn" style="background:#555;color:#fff" onclick="openScriptSettings()">⚙️ Script URL</button>
 </div>
 
 <!-- SEARCH + CATEGORY FILTERS -->
@@ -220,42 +274,14 @@ tr:hover td{background:#f8faff}
 
 <div class="toast" id="toast"></div>
 
-<!-- SCRIPT SETTINGS MODAL -->
-<div class="modal-overlay" id="script-modal">
-  <div class="modal" style="max-width:500px">
-    <h3>⚙️ Google Apps Script URL</h3>
-    <p style="font-size:12px;color:#666;margin-bottom:14px">Paste your Google Apps Script deployment URL below. This connects the Inventory page to your Google Sheets database.</p>
-    <div class="form-group full" style="margin-bottom:12px">
-      <label>Apps Script URL</label>
-      <input id="script-url-input" placeholder="https://script.google.com/macros/s/.../exec"
-        style="font-size:11px;font-family:monospace;width:100%;border:2px solid #e0e8f5;border-radius:8px;padding:10px 12px;outline:none">
-    </div>
-    <div style="background:#f0f4fe;border-radius:8px;padding:12px;font-size:11px;color:#555;margin-bottom:14px;line-height:1.7">
-      <b style="color:#0B2545">How to get your URL:</b><br>
-      1. Go to <b>script.google.com</b><br>
-      2. Open your G2G POS project<br>
-      3. Click <b>Deploy → Manage deployments</b><br>
-      4. Copy the <b>/exec</b> URL<br>
-      5. Paste it above → Save
-    </div>
-    <div id="script-test-result" style="font-size:12px;font-weight:700;min-height:20px;margin-bottom:10px"></div>
-    <div class="modal-actions">
-      <button class="m-save" onclick="testAndSaveScript()">🔗 Test & Save</button>
-      <button class="m-cancel" onclick="closeModal('script-modal')">Cancel</button>
-    </div>
-  </div>
-</div>
-
 </div><!-- end main-app -->
 
 <script>
 // ── Config ────────────────────────────────────────────────────────────────────
-// Google Apps Script URL — loaded from settings or default
+// Google Apps Script URL — hardcoded to the same deployed script used by the POS.
 try{localStorage.removeItem('gtg_stock_inventory');}catch(e){}
-// Use the SAME deployed Google Apps Script as the working POS.
-var SHEETS_URL_PERMANENT = 'https://script.google.com/macros/s/AKfycbxekBOUqNmRgmPuLj96dtbI5tCJ4aGo6QV0dZ265nAGrhWgWG5-3BmGybb0_bzc6SvtwQ/exec';
-var SHEETS_URL = SHEETS_URL_PERMANENT;
-try{ localStorage.setItem('gtg_sheets_url', SHEETS_URL_PERMANENT); }catch(e){}
+try{localStorage.removeItem('gtg_sheets_url');}catch(e){}
+var SHEETS_URL = 'https://script.google.com/macros/s/AKfycbz7-oe_VKlkbQ16RVt240fz374eB5zE0f2Uh91VLH-rEVISfW2El7IS_1_kWNWEeM5f6w/exec';
 
 // ── State ─────────────────────────────────────────────────────────────────────
 var inventory = [];
@@ -413,9 +439,6 @@ window.addEventListener('DOMContentLoaded', function(){
 });
 
 async function initApp(){
-  if(!localStorage.getItem('gtg_sheets_url')){
-    setTimeout(function(){ showToast('👆 Tap ⚙️ Script URL to connect Google Sheets','info'); },800);
-  }
   inventory=[];
   renderTable();
   setStatus('loading','Connecting…');
@@ -591,7 +614,7 @@ function renderTable(){
   // Rows
   var tbody = document.getElementById('inv-tbody');
   if(!filtered.length){
-    tbody.innerHTML='<tr><td colspan="11" class="empty"><div class="empty-icon">📦</div><p>No items found.</p></td></tr>';
+    tbody.innerHTML='<tr><td colspan="11" class="empty" style="text-align:center"><div class="empty-icon">📦</div><p>No items found.</p></td></tr>';
     return;
   }
   tbody.innerHTML = filtered.map(function(i){
@@ -601,17 +624,17 @@ function renderTable(){
                           : '<span class="badge badge-ok">In Stock</span>';
     var rowStyle = stock<=0 ? 'background:#fff5f5' : '';
     return '<tr style="'+rowStyle+'">'
-      +'<td><b>'+( i.itemCode||'—')+'</b></td>'
-      +'<td>'+( i.description||'—')+'</td>'
-      +'<td>'+( i.category||'—')+'</td>'
-      +'<td>₱'+(i.price||0).toFixed(2)+'</td>'
-      +'<td>'+( i.unit||'—')+'</td>'
-      +'<td>'+( i.uom||'—')+'</td>'
-      +'<td>'+( i.begBal||0)+'</td>'
-      +'<td style="font-weight:800;color:'+(stock<=0?'#E74C3C':stock<=5?'#E67E22':'#27AE60')+'">'+stock+'</td>'
-      +'<td>'+badge+'</td>'
-      +'<td>'+( i.supplier||'—')+'</td>'
-      +'<td><div class="action-btns">'
+      +'<td data-label="Item Code"><b>'+( i.itemCode||'—')+'</b></td>'
+      +'<td data-label="Description">'+( i.description||'—')+'</td>'
+      +'<td data-label="Category">'+( i.category||'—')+'</td>'
+      +'<td data-label="Price">₱'+(i.price||0).toFixed(2)+'</td>'
+      +'<td data-label="Unit">'+( i.unit||'—')+'</td>'
+      +'<td data-label="UOM">'+( i.uom||'—')+'</td>'
+      +'<td data-label="Beg. Bal.">'+( i.begBal||0)+'</td>'
+      +'<td data-label="Ending Stock" style="font-weight:800;color:'+(stock<=0?'#E74C3C':stock<=5?'#E67E22':'#27AE60')+'">'+stock+'</td>'
+      +'<td data-label="Status">'+badge+'</td>'
+      +'<td data-label="Supplier">'+( i.supplier||'—')+'</td>'
+      +'<td class="td-actions" data-label="Actions"><div class="action-btns">'
       +'<button class="icon-btn" style="background:#e8f0fe" onclick="editItem('+i.id+')" title="Edit">✏️</button>'
       +'<button class="icon-btn" style="background:#fdecea" onclick="deleteItem('+i.id+')" title="Delete">🗑️</button>'
       +'</div></td>'
@@ -632,46 +655,6 @@ function doLogout(){
   document.getElementById('login-error').textContent = '';
   document.getElementById('user-badge').textContent = '';
 }
-
-// ── Script Settings ──────────────────────────────────────────────────────────
-function openScriptSettings(){
-  var el = document.getElementById('script-url-input');
-  if(el) el.value = SHEETS_URL || '';
-  document.getElementById('script-test-result').textContent = '';
-  document.getElementById('script-modal').classList.add('active');
-}
-
-async function testAndSaveScript(){
-  var url = (document.getElementById('script-url-input').value||'').trim();
-  var res_el = document.getElementById('script-test-result');
-  if(!url){ res_el.textContent = '❌ Please enter a URL.'; res_el.style.color='#E74C3C'; return; }
-  if(!url.includes('script.google.com')){ res_el.textContent = '❌ Invalid URL — must be a Google Apps Script URL.'; res_el.style.color='#E74C3C'; return; }
-  res_el.textContent = '⏳ Testing connection…'; res_el.style.color='#888';
-  // Test the URL
-  var result = await new Promise(function(resolve){
-    var cb='test_'+Date.now(), script=document.createElement('script');
-    var t=setTimeout(function(){ resolve(null); try{document.body.removeChild(script);}catch(e){} delete window[cb]; },10000);
-    window[cb]=function(d){ clearTimeout(t); resolve(d); try{document.body.removeChild(script);}catch(e){} delete window[cb]; };
-    script.src=url+'?action=ping&callback='+cb;
-    document.body.appendChild(script);
-  });
-  if(result && result.ok){
-    SHEETS_URL = url;
-    localStorage.setItem('gtg_sheets_url', url);
-    res_el.textContent = '✅ Connected! Saving…'; res_el.style.color='#27AE60';
-    setTimeout(function(){
-      closeModal('script-modal');
-      setStatus('connected','Google Sheets ✓');
-      showToast('✅ Script URL saved! Importing data…','success');
-      importFromSheets(true);
-    },1000);
-  } else {
-    res_el.textContent = '❌ Cannot connect. Check the URL and make sure it is deployed with "Anyone" access.';
-    res_el.style.color='#E74C3C';
-  }
-}
-
-function closeModal(id){ document.getElementById(id).classList.remove('active'); }
 
 // ── Modal ─────────────────────────────────────────────────────────────────────
 function openAddModal(){
