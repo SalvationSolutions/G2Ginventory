@@ -281,7 +281,7 @@ tr:hover td{background:#f8faff}
 // Google Apps Script URL — hardcoded to the same deployed script used by the POS.
 try{localStorage.removeItem('gtg_stock_inventory');}catch(e){}
 try{localStorage.removeItem('gtg_sheets_url');}catch(e){}
-var SHEETS_URL = 'https://script.google.com/macros/s/AKfycbzbbTu1OOOJgfJjpfb_wJ7Aln8SkxyZoZjQpwYTjTkKc5frxqLUAh3AyxUytpkLjeQ34w/exec';
+var SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyseP-hexGb1QHCzLnInUFbTr8wwkAdVIJ1t_k_IEMcuw_4G77Q8d7V8TMvXUiIKi6h-g/exec';
 
 // ── State ─────────────────────────────────────────────────────────────────────
 var inventory = [];
@@ -313,7 +313,7 @@ async function doLogin(){
   try{
     var res = await _postAction('login',{username:user,pin:pass});
     if(!res || !res.ok || !res.sessionToken){
-      errEl.textContent = res && res.error==='TOO_MANY_ATTEMPTS' ? '❌ Too many attempts. Try again later.' : '❌ Wrong username/PIN or backend login failed.';
+      errEl.textContent = res && res.error==='TOO_MANY_ATTEMPTS' ? '❌ Too many attempts. Try again later.' : (res && res.error==='POST_REQUIRED' ? '❌ Backend deployment is outdated. Redeploy the new Apps Script.' : '❌ Wrong username/PIN or backend login failed.');
       return;
     }
     sessionToken = res.sessionToken;
