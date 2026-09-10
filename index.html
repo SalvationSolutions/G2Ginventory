@@ -288,6 +288,8 @@ var inventory = [];
 var editingId = null;
 var activeCat = 'All';
 var _online   = false;
+var sessionToken = '';
+var backendUser = null;
 
 // ── Credentials ──────────────────────────────────────────────────────────────
 var STAFF = [
@@ -300,24 +302,34 @@ var STAFF = [
 ];
 var currentUser = null;
 
-function doLogin(){
+async function doLogin(){
   var user = (document.getElementById('login-user').value||'').trim();
   var pass = (document.getElementById('login-pass').value||'').trim();
   var errEl = document.getElementById('login-error');
+  var btn = document.querySelector('.login-btn');
   errEl.textContent = '';
-  var found = STAFF.find(function(s){
-    return s.username.toLowerCase()===user.toLowerCase() && s.password===pass;
-  });
-  if(!found){ errEl.textContent = '❌ Wrong username or password.'; return; }
-  currentUser = found;
-  document.getElementById('login-screen').style.display = 'none';
-  document.getElementById('main-app').style.display = 'block';
-  // Update header with user info
-  var userBadge = document.getElementById('user-badge');
-  if(userBadge) userBadge.textContent = '👤 '+found.username+' ('+found.role+')';
-  document.getElementById('login-pass').value = '';
-  // Init app
-  initApp();
+  if(!user || !pass){ errEl.textContent='❌ Enter username and PIN.'; return; }
+  if(btn){btn.disabled=true;btn.textContent='🔄 Signing in…';}
+  try{
+    var res = await _postAction('login',{username:user,pin:pass});
+    if(!res || !res.ok || !res.sessionToken){
+      errEl.textContent = res && res.error==='TOO_MANY_ATTEMPTS' ? '❌ Too many attempts. Try again later.' : '❌ Wrong username/PIN or backend login failed.';
+      return;
+    }
+    sessionToken = res.sessionToken;
+    backendUser = res.user || {name:user,role:''};
+    currentUser = backendUser;
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('main-app').style.display = 'block';
+    var userBadge = document.getElementById('user-badge');
+    if(userBadge) userBadge.textContent = '👤 '+(backendUser.name||user)+' ('+(backendUser.role||'User')+')';
+    document.getElementById('login-pass').value = '';
+    await initApp();
+  }catch(e){
+    errEl.textContent='❌ Cannot reach login backend. Check deployment URL/access.';
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent='🔓 Login';}
+  }
 }
 
 // ── Google Sheets is the only inventory source of truth ─────────────────────
@@ -373,6 +385,16 @@ function _fetchTransport(fullUrl){
 
 // Match the transport used by the working POS: JSONP for small requests,
 // POST for large writes. The live Apps Script already supports saveInventory.
+function _postAction(action,data){
+  var body=Object.assign({action:action},data||{});
+  var ctrl=new AbortController();
+  var timer=setTimeout(function(){ctrl.abort();},30000);
+  return fetch(SHEETS_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(body),signal:ctrl.signal})
+    .then(function(r){clearTimeout(timer);return r.text();})
+    .then(function(t){try{return JSON.parse(t);}catch(e){throw new Error('Invalid backend response');}})
+    .catch(function(e){clearTimeout(timer);throw e;});
+}
+
 async function _call(url, action, data){
   var qs='?action='+encodeURIComponent(action);
   if(data && Object.keys(data).length){
@@ -386,7 +408,7 @@ async function _call(url, action, data){
         return await r.json();
       }catch(e){ return null; }
     }
-    qs+='&data='+encoded;
+    qs+='&payload='+encoded;
   }
   var fullUrl=url+qs;
   try{return await _jsonp(fullUrl);}catch(e){
@@ -397,8 +419,13 @@ async function _call(url, action, data){
 function sheetsCall(action, body){
   return new Promise(async function(resolve){
     if(!SHEETS_URL){resolve(null);return;}
-    var result=await _call(SHEETS_URL,action,body||{});
-    if(result!==null){ _online=true; setStatus('connected','Google Sheets ✓'); }
+    var payload=Object.assign({},body||{});
+    if(action!=='ping' && action!=='login' && sessionToken) payload.sessionToken=sessionToken;
+    var result=await _call(SHEETS_URL,action,payload);
+    if(result && result.authRequired){
+      sessionToken=''; backendUser=null; _online=false;
+      setStatus('disconnected','Session expired');
+    } else if(result!==null){ _online=true; setStatus('connected','Google Sheets ✓'); }
     resolve(result);
   });
 }
@@ -645,8 +672,10 @@ function renderTable(){
 function setCat(cat){ activeCat=cat; renderTable(); }
 
 // ── Logout ───────────────────────────────────────────────────────────────────
-function doLogout(){
+async function doLogout(){
   if(!confirm('Logout from Inventory?')) return;
+  try{ if(sessionToken) await sheetsCall('logout'); }catch(e){}
+  sessionToken = ''; backendUser = null;
   currentUser = null;
   document.getElementById('main-app').style.display = 'none';
   document.getElementById('login-screen').style.display = 'flex';
