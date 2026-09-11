@@ -281,7 +281,560 @@ tr:hover td{background:#f8faff}
 // Google Apps Script URL — hardcoded to the same deployed script used by the POS.
 try{localStorage.removeItem('gtg_stock_inventory');}catch(e){}
 try{localStorage.removeItem('gtg_sheets_url');}catch(e){}
+var SHEETS_URL = '<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>G2G Taverna — Kitchen Display</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Nunito:wght@400;600;700;800;900&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0d0d1a;color:#fff;font-family:Nunito,sans-serif;min-height:100vh}
+
+/* HEADER */
+.header{background:#111122;border-bottom:2px solid #222244;padding:12px 20px;display:flex;align-items:center;justify-content:space-between}
+.header-left{display:flex;align-items:center;gap:12px}
+.header-left h1{font-family:Cinzel,serif;font-size:18px;color:#fff;letter-spacing:1px}
+.clock{font-size:22px;font-weight:900;color:#C9A227;letter-spacing:2px;font-family:'Courier New',monospace}
+.db-dot{width:10px;height:10px;border-radius:50%;background:#E74C3C;display:inline-block;margin-right:5px;flex-shrink:0;transition:.3s}
+.db-dot.ok{background:#27AE60;box-shadow:0 0 8px #27AE60}
+.db-dot.loading{background:#F39C12;animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.2}}
+#conn-badge.ok{background:rgba(39,174,96,.1);border-color:rgba(39,174,96,.3)!important}
+#conn-badge.err{background:rgba(231,76,60,.1);border-color:rgba(231,76,60,.3)!important}
+.status-txt{font-size:11px;font-weight:700;opacity:.7}
+
+/* TOOLBAR */
+.toolbar{background:#111122;padding:10px 20px;display:flex;align-items:center;gap:8px;border-bottom:1px solid #222244}
+.toolbar-stats{display:flex;gap:16px;margin-right:auto}
+.t-stat{text-align:center}
+.t-stat-num{font-size:20px;font-weight:900;color:#C9A227}
+.t-stat-label{font-size:10px;color:#888;font-weight:700;text-transform:uppercase}
+.btn{padding:8px 16px;border:none;border-radius:8px;font-family:Nunito,sans-serif;font-weight:800;font-size:12px;cursor:pointer}
+.btn-refresh{background:#222244;color:#fff;border:1px solid #333366}
+.btn-print{background:#E65100;color:#fff}
+.btn-done-all{background:#27AE60;color:#fff}
+
+/* AUTO REFRESH TOGGLE */
+.auto-badge{display:flex;align-items:center;gap:6px;background:#222244;border-radius:20px;padding:5px 12px;font-size:11px;font-weight:700;color:#888;cursor:pointer;border:1px solid #333366}
+.auto-badge.active{color:#27AE60;border-color:#27AE60}
+.toggle{width:28px;height:15px;border-radius:10px;background:#555;position:relative;transition:.2s}
+.toggle.on{background:#27AE60}
+.toggle::after{content:'';position:absolute;width:11px;height:11px;border-radius:50%;background:#fff;top:2px;left:2px;transition:.2s}
+.toggle.on::after{left:15px}
+
+/* ORDERS GRID */
+.orders-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;padding:20px}
+
+/* ORDER CARD */
+.order-card{border-radius:14px;border:2px solid #222244;overflow:hidden;transition:border-color .3s}
+.order-card.green{border-color:#27AE60}
+.order-card.orange{border-color:#E67E22}
+.order-card.red{border-color:#E74C3C;animation:urgentPulse 2s infinite}
+@keyframes urgentPulse{0%,100%{border-color:#E74C3C}50%{border-color:#ff6b6b}}
+.card-header{padding:12px 16px;display:flex;align-items:center;justify-content:space-between}
+.card-header.green{background:rgba(39,174,96,.15)}
+.card-header.orange{background:rgba(230,126,34,.15)}
+.card-header.red{background:rgba(231,76,60,.2)}
+.order-num{font-size:18px;font-weight:900}
+.order-table{font-size:12px;opacity:.7;margin-top:2px}
+.timer-badge{padding:4px 10px;border-radius:20px;font-size:12px;font-weight:900;font-family:'Courier New',monospace}
+.timer-badge.green{background:rgba(39,174,96,.3);color:#4ade80}
+.timer-badge.orange{background:rgba(230,126,34,.3);color:#fb923c}
+.timer-badge.red{background:rgba(231,76,60,.3);color:#f87171}
+.card-body{padding:12px 16px;background:#13132a}
+.item-row{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #1e1e3a;font-size:14px}
+.item-row:last-child{border-bottom:none}
+.item-qty{background:#222244;border-radius:6px;padding:2px 8px;font-weight:900;font-size:13px;color:#C9A227;min-width:32px;text-align:center}
+.item-name{flex:1;font-weight:600}
+.note-row{margin-top:8px;padding:8px;background:rgba(201,162,39,.1);border-radius:8px;border-left:3px solid #C9A227;font-size:12px;color:#C9A227}
+.customer-row{font-size:11px;color:#888;margin-top:4px}
+.card-footer{padding:10px 16px;background:#0d0d1a;border-top:1px solid #1e1e3a;display:flex;gap:8px}
+.btn-done{flex:1;padding:10px;background:#27AE60;border:none;border-radius:8px;color:#fff;font-family:Nunito,sans-serif;font-weight:900;font-size:13px;cursor:pointer;transition:.2s}
+.btn-done:hover{background:#219a52}
+.btn-print-ticket{padding:10px 14px;background:#222244;border:1px solid #333366;border-radius:8px;color:#fff;font-family:Nunito,sans-serif;font-weight:800;font-size:12px;cursor:pointer}
+
+/* EMPTY STATE */
+.empty-state{text-align:center;padding:80px 20px;color:#444}
+.empty-state .icon{font-size:64px;margin-bottom:16px}
+.empty-state h2{font-family:Cinzel,serif;font-size:20px;color:#666;margin-bottom:8px}
+.empty-state p{font-size:13px;color:#555}
+
+/* DONE OVERLAY */
+.done-overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);display:none;align-items:center;justify-content:center;z-index:999}
+.done-overlay.show{display:flex}
+.done-card{background:#111122;border:2px solid #27AE60;border-radius:20px;padding:40px;text-align:center;animation:popIn .3s}
+@keyframes popIn{from{transform:scale(.8);opacity:0}to{transform:scale(1);opacity:1}}
+.done-icon{font-size:64px;margin-bottom:16px}
+.done-title{font-family:Cinzel,serif;font-size:24px;color:#27AE60}
+.done-sub{color:#888;margin-top:8px;font-size:14px}
+
+/* TOAST */
+.toast{position:fixed;top:80px;left:50%;transform:translateX(-50%);background:#222;color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;font-weight:700;z-index:9999;opacity:0;transition:.3s;pointer-events:none}
+.toast.show{opacity:1}
+.toast.success{background:#27AE60}
+.toast.warning{background:#E67E22}
+.toast.error{background:#E74C3C}
+
+/* LOGIN */
+#login-screen{position:fixed;inset:0;background:linear-gradient(160deg,#0d0d1a,#111133);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px}
+.login-card{background:#111122;border:1px solid #222244;border-radius:20px;padding:36px 32px;width:100%;max-width:360px;text-align:center}
+.login-icon{font-size:52px;margin-bottom:8px}
+.login-card h1{font-family:Cinzel,serif;font-size:17px;color:#C9A227;margin-bottom:4px}
+.login-card p{font-size:12px;color:#555;margin-bottom:24px}
+.login-input{width:100%;background:#0d0d1a;border:1px solid #333366;border-radius:10px;padding:11px 14px;font-family:Nunito,sans-serif;font-size:14px;color:#fff;outline:none;margin-bottom:10px;text-align:center}
+.login-input:focus{border-color:#C9A227}
+.login-input::placeholder{color:#444}
+.login-btn{width:100%;background:#C9A227;color:#0d0d1a;border:none;border-radius:10px;padding:13px;font-family:Nunito,sans-serif;font-weight:900;font-size:14px;cursor:pointer;margin-top:4px}
+.login-error{color:#E74C3C;font-size:12px;font-weight:700;min-height:20px;margin-bottom:8px}
+
+/* PRINTER SETTINGS */
+.settings-panel{position:fixed;top:0;right:-320px;width:300px;max-width:88vw;height:100vh;background:#111122;border-left:1px solid #222244;padding:20px;transition:.3s;z-index:900;overflow-y:auto}
+.settings-panel.open{right:0}
+.settings-panel h3{font-family:Cinzel,serif;color:#C9A227;margin-bottom:16px;font-size:15px}
+.s-label{font-size:11px;font-weight:800;color:#888;text-transform:uppercase;margin-bottom:5px;display:block}
+.s-input{width:100%;background:#0d0d1a;border:1px solid #333366;border-radius:8px;padding:9px 12px;color:#fff;font-family:Nunito,sans-serif;font-size:13px;margin-bottom:12px;outline:none}
+.s-input:focus{border-color:#C9A227}
+.s-btn{width:100%;padding:10px;background:#C9A227;color:#0d0d1a;border:none;border-radius:8px;font-family:Nunito,sans-serif;font-weight:900;cursor:pointer;margin-top:4px}
+.s-close{background:#222244;color:#fff;margin-top:8px}
+
+/* ── RESPONSIVE: TABLET (≤1024px) ─────────────────────────────────────── */
+@media (max-width:1024px){
+  .orders-grid{grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;padding:16px}
+  .header{padding:10px 14px}
+  .toolbar{padding:8px 14px}
+}
+
+/* ── RESPONSIVE: MOBILE (≤680px) ──────────────────────────────────────── */
+@media (max-width:680px){
+  .header{flex-wrap:wrap;row-gap:10px;padding:10px 12px}
+  .header-left h1{font-size:14px;letter-spacing:.5px}
+  .header-left span{font-size:22px!important}
+  .clock{font-size:16px;letter-spacing:1px}
+  .header > div:last-child{width:100%;justify-content:space-between;gap:8px;flex-wrap:wrap}
+  #db-pill{padding:4px 10px;order:1}
+  #user-badge{order:3;font-size:10px!important}
+  .header .btn{font-size:10px!important;padding:7px 10px}
+
+  .toolbar{flex-wrap:wrap;gap:10px;padding:10px 12px}
+  .toolbar-stats{width:100%;justify-content:space-around;margin-right:0;order:1}
+  .t-stat-num{font-size:18px}
+  .auto-badge{order:2;flex:1;justify-content:center}
+  .btn-refresh,.btn-print,.btn-done-all{order:3;flex:1;min-height:40px;font-size:11px;padding:9px 8px}
+
+  .orders-grid{grid-template-columns:1fr;gap:12px;padding:12px}
+  .order-num{font-size:16px}
+  .timer-badge{font-size:11px}
+  .item-row{font-size:13px}
+  .card-footer{flex-direction:row}
+  .btn-done,.btn-print-ticket{min-height:44px}
+
+  .login-card{padding:28px 22px}
+  .settings-panel{width:100vw;max-width:100vw}
+  .done-card{padding:28px 20px;margin:0 16px}
+}
+
+/* ── RESPONSIVE: VERY SMALL PHONES (≤380px) ───────────────────────────── */
+@media (max-width:380px){
+  .header-left h1{font-size:12px}
+  .clock{font-size:14px}
+  .toolbar-stats{gap:8px}
+  .t-stat-num{font-size:16px}
+  .t-stat-label{font-size:9px}
+}
+
+/* ── RESPONSIVE: LARGE KITCHEN DISPLAYS / TVs (≥1600px) ───────────────── */
+@media (min-width:1600px){
+  .orders-grid{grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:22px;padding:28px}
+  .order-num{font-size:22px}
+  .item-name{font-size:16px}
+  .timer-badge{font-size:14px;padding:6px 14px}
+  .clock{font-size:26px}
+  .t-stat-num{font-size:24px}
+}
+
+/* Touch-friendly tap targets everywhere */
+button,.btn,.auto-badge,.item-row{touch-action:manipulation}
+@media (hover:none){
+  .btn,.btn-done,.btn-print-ticket,.s-btn,.login-btn{min-height:42px}
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-icon">🍳</div>
+    <h1>GREEK TO GO TAVERNA</h1>
+    <p>Kitchen Display — Staff Login</p>
+    <input class="login-input" id="login-user" placeholder="Username" autocomplete="username"
+      onkeydown="if(event.key==='Enter') document.getElementById('login-pass').focus()">
+    <input class="login-input" id="login-pass" placeholder="Password / PIN" type="password"
+      autocomplete="current-password" onkeydown="if(event.key==='Enter') doLogin()">
+    <div class="login-error" id="login-error"></div>
+    <button class="login-btn" onclick="doLogin()">🔓 Enter Kitchen</button>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="main-app" style="display:none">
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-left">
+    <span style="font-size:28px">🍳</span>
+    <h1>GREEK TO GO — KITCHEN</h1>
+  </div>
+  <div style="display:flex;align-items:center;gap:16px">
+    <div id="db-pill" style="display:flex;align-items:center;gap:7px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:5px 13px;transition:.3s">
+      <span id="db-dot" style="width:9px;height:9px;border-radius:50%;background:#F39C12;display:inline-block;box-shadow:0 0 6px #F39C12;transition:.3s;animation:pulse 1s infinite"></span>
+      <span id="db-txt" style="font-size:11px;font-weight:800;color:#fbbf24">Connecting…</span>
+    </div>
+    <div class="clock" id="clock">--:--:--</div>
+    <button class="btn" style="background:#222244;color:#C9A227;border:1px solid #C9A227;font-size:11px" onclick="toggleSettings()">⚙️ Printer</button>
+    <span id="user-badge" style="font-size:11px;color:rgba(255,255,255,.5);font-weight:700"></span>
+    <button class="btn" style="background:#1a0a0a;color:#E74C3C;border:1px solid #E74C3C;font-size:11px" onclick="doLogout()">🚪 Logout</button>
+  </div>
+</div>
+
+<!-- TOOLBAR -->
+<div class="toolbar">
+  <div class="toolbar-stats">
+    <div class="t-stat"><div class="t-stat-num" id="stat-pending">0</div><div class="t-stat-label">Pending</div></div>
+    <div class="t-stat"><div class="t-stat-num" style="color:#E74C3C" id="stat-urgent">0</div><div class="t-stat-label">Urgent (&gt;10min)</div></div>
+    <div class="t-stat"><div class="t-stat-num" style="color:#27AE60" id="stat-done-today">0</div><div class="t-stat-label">Done Today</div></div>
+  </div>
+  <div class="auto-badge" id="auto-badge" onclick="toggleAutoRefresh()">
+    <div class="toggle on" id="auto-toggle"></div>
+    <span id="auto-label">Auto-refresh ON</span>
+  </div>
+  <button class="btn btn-refresh" onclick="refresh()">🔄 Refresh</button>
+  <button class="btn btn-done-all" onclick="markAllDone()">✅ Mark All Done</button>
+</div>
+
+<!-- ORDERS GRID -->
+<div class="orders-grid" id="orders-grid"></div>
+
+<!-- DONE OVERLAY -->
+<div class="done-overlay" id="done-overlay">
+  <div class="done-card">
+    <div class="done-icon">✅</div>
+    <div class="done-title" id="done-title">Order Done!</div>
+    <div class="done-sub" id="done-sub">Order marked as complete</div>
+  </div>
+</div>
+
+<!-- PRINTER SETTINGS PANEL -->
+<div class="settings-panel" id="settings-panel">
+  <h3>🖨️ Kitchen Printer</h3>
+  <label class="s-label">Printer Type</label>
+  <select id="p-type" class="s-input" onchange="updatePType()">
+    <option value="rawbt">RawBT (XP-58IID via Bluetooth)</option>
+    <option value="browser">Browser Print (WiFi Printer)</option>
+  </select>
+  <div id="p-ip-group" style="display:none">
+    <label class="s-label">Printer IP Address</label>
+    <input id="p-ip" class="s-input" placeholder="e.g. 192.168.1.105">
+  </div>
+  <label class="s-label">Auto-print new orders</label>
+  <select id="p-auto" class="s-input">
+    <option value="yes">Yes — print automatically</option>
+    <option value="no">No — tap Print manually</option>
+  </select>
+  <button class="s-btn" onclick="saveSettings()">💾 Save Settings</button>
+  <button class="s-btn s-close" onclick="toggleSettings()">✕ Close</button>
+  <div style="margin-top:20px;padding:12px;background:#0d0d1a;border-radius:8px;font-size:11px;color:#666;line-height:1.6">
+    <b style="color:#C9A227">RawBT Setup:</b><br>
+    1. Install RawBT from Play Store<br>
+    2. Pair XP-58IID in Bluetooth Settings<br>
+    3. Open RawBT → select XP-58IID<br>
+    4. Come back here → Printer Type: RawBT<br>
+    5. Enable Auto-print ✅
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+</div><!-- end main-app -->
+<script>
+// ── Credentials ──────────────────────────────────────────────────────────────
+var STAFF = [
+  {username:'owner',    password:'1234', role:'Owner'},
+  {username:'Wahlene',  password:'1234', role:'Staff'},
+  {username:'Beth',     password:'5678', role:'Staff'},
+  {username:'Zap',      password:'9999', role:'Staff'},
+  {username:'cashier1', password:'1111', role:'Cashier'},
+  {username:'cashier2', password:'2222', role:'Cashier'},
+];
+var currentUser = null;
+
+function doLogin(){
+  var user  = (document.getElementById('login-user').value||'').trim();
+  var pass  = (document.getElementById('login-pass').value||'').trim();
+  var errEl = document.getElementById('login-error');
+  errEl.textContent = '';
+  var found = STAFF.find(function(s){
+    return s.username.toLowerCase()===user.toLowerCase() && s.password===pass;
+  });
+  if(!found){ errEl.textContent = '❌ Wrong username or password.'; return; }
+  currentUser = found;
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('main-app').style.display = 'block';
+  var badge = document.getElementById('user-badge');
+  if(badge) badge.textContent = '👤 '+found.username;
+  initKitchen();
+}
+
+function doLogout(){
+  if(!confirm('Logout from Kitchen Display?')) return;
+  currentUser = null;
+  if(refreshTimer) clearInterval(refreshTimer);
+  document.getElementById('main-app').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('login-user').value = '';
+  document.getElementById('login-pass').value = '';
+  document.getElementById('login-error').textContent = '';
+  document.getElementById('orders-grid').innerHTML = '';
+}
+
+// ── Google Apps Script URL — hardcoded (matches main POS deployment) ─────
 var SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyY-Ln4fYpYK2BOqrvBAjr_Nc_VuJPo4f0oiTfN79O-OZzl-ymWIwZzdCa33_xsPC5EUg/exec';
+
+var orders       = [];
+var doneToday    = 0;
+var autoRefresh  = true;
+var refreshTimer = null;
+var _online      = false;
+var _lastOrderIds= new Set();
+
+// Printer config
+var _pc = (function(){ try{ return JSON.parse(localStorage.getItem('gtg_kitchen_printer')||'{}'); }catch(e){ return {}; } })();
+var PRINTER_TYPE = _pc.type || 'rawbt';
+var PRINTER_IP   = _pc.ip   || '';
+var AUTO_PRINT   = _pc.auto !== 'no';
+
+// Clock
+setInterval(function(){
+  document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-PH');
+},1000);
+
+// Sheets call
+function sheetsCall(action, body){
+  return new Promise(function(resolve){
+    var cb='k_'+Date.now(), script=document.createElement('script');
+    var t=setTimeout(function(){ resolve(null); try{document.body.removeChild(script);}catch(e){} delete window[cb]; },15000);
+    window[cb]=function(d){ clearTimeout(t); resolve(d); try{document.body.removeChild(script);}catch(e){} delete window[cb]; };
+    script.src=SHEETS_URL+'?action='+action+'&data='+encodeURIComponent(JSON.stringify(body||{}))+'&callback='+cb;
+    document.body.appendChild(script);
+  });
+}
+
+// Init
+window.addEventListener('DOMContentLoaded', function(){
+  setTimeout(function(){ var el=document.getElementById('login-user'); if(el) el.focus(); }, 200);
+});
+
+async function initKitchen(){
+  setDB('loading','Connecting…');
+  loadPrinterSettings();
+  var ping = await sheetsCall('ping');
+  if(ping && ping.ok){
+    _online=true; setDB('ok','● Google Sheets ✓');
+    await refresh();
+    startAutoRefresh();
+  } else {
+    setDB('err','Offline — tap to retry');
+    showToast('⚠️ Cannot reach Sheets.','warning');
+    renderOrders();
+  }
+}
+
+// Refresh
+async function refresh(){
+  var res = await sheetsCall('getKitchenOrders');
+  if(res && res.orders){
+    var pending = res.orders.filter(function(o){ return o.status==='pending'; })
+      .map(function(o){
+        try{ var items = typeof o.items==='string' ? JSON.parse(o.items) : o.items; o.items=items; }catch(e){ o.items=[]; }
+        return o;
+      });
+    // Detect new orders for auto-print
+    if(AUTO_PRINT && _lastOrderIds.size > 0){
+      pending.forEach(function(o){
+        if(!_lastOrderIds.has(String(o.id))){ printTicket(o, true); }
+      });
+    }
+    _lastOrderIds = new Set(pending.map(function(o){ return String(o.id); }));
+    orders = pending;
+    renderOrders();
+  }
+}
+
+// Render
+function renderOrders(){
+  var grid = document.getElementById('orders-grid');
+  var now  = Date.now();
+  var urgent = 0;
+  document.getElementById('stat-pending').textContent   = orders.length;
+  document.getElementById('stat-done-today').textContent= doneToday;
+  if(!orders.length){
+    document.getElementById('stat-urgent').textContent = 0;
+    grid.innerHTML = '<div style="grid-column:1/-1"><div class="empty-state"><div class="icon">🍽️</div><h2>All Clear!</h2><p>No pending orders. Kitchen is caught up.</p></div></div>';
+    return;
+  }
+  grid.innerHTML = orders.map(function(o){
+    var elapsed = Math.floor((now - parseInt(o.sentAt||now)) / 1000);
+    var mins    = Math.floor(elapsed/60);
+    var secs    = elapsed%60;
+    var color   = elapsed<300?'green':elapsed<600?'orange':'red';
+    if(color==='red') urgent++;
+    var timerStr= mins+'m '+String(secs).padStart(2,'0')+'s';
+    var items   = (o.items||[]).map(function(item){
+      return '<div class="item-row"><span class="item-qty">x'+(item.qty||1)+'</span><span class="item-name">'+(item.name||item)+'</span></div>';
+    }).join('');
+    var note = o.notes ? '<div class="note-row">📝 '+o.notes+'</div>' : '';
+    var cust = o.customer ? '<div class="customer-row">👤 '+o.customer+'</div>' : '';
+    return '<div class="order-card '+color+'">'
+      +'<div class="card-header '+color+'">'
+      +'<div><div class="order-num">Order #'+(String(o.orderNum||o.id).padStart(4,'0'))+'</div>'
+      +'<div class="order-table">📍 '+(o.table||'Takeout')+(o.cashier?' · '+o.cashier:'')+'</div>'
+      +cust+'</div>'
+      +'<div class="timer-badge '+color+'">⏱ '+timerStr+'</div>'
+      +'</div>'
+      +'<div class="card-body">'+items+note+'</div>'
+      +'<div class="card-footer">'
+      +'<button class="btn-print-ticket" onclick="printTicket(orders.find(function(x){return x.id===\''+o.id+'\'}))" title="Print Ticket">🖨️</button>'
+      +'<button class="btn-done" onclick="markDone(\''+o.id+'\',\''+String(o.orderNum||'').padStart(4,'0')+'\')">✅ Mark Done</button>'
+      +'</div>'
+      +'</div>';
+  }).join('');
+  document.getElementById('stat-urgent').textContent = urgent;
+}
+
+// Mark Done
+async function markDone(id, num){
+  orders = orders.filter(function(o){ return String(o.id)!==String(id); });
+  doneToday++;
+  renderOrders();
+  // Show done overlay
+  document.getElementById('done-title').textContent = 'Order #'+num+' Done!';
+  document.getElementById('done-sub').textContent   = 'Marked as complete ✓';
+  var ov=document.getElementById('done-overlay'); ov.classList.add('show');
+  setTimeout(function(){ ov.classList.remove('show'); },1800);
+  // Update Sheets
+  if(_online) await sheetsCall('updateKitchenOrder',{id:id,status:'done'});
+}
+
+async function markAllDone(){
+  if(!orders.length){ showToast('No pending orders.','warning'); return; }
+  if(!confirm('Mark ALL '+orders.length+' orders as done?')) return;
+  var ids = orders.map(function(o){ return o.id; });
+  doneToday += orders.length;
+  orders=[];
+  renderOrders();
+  showToast('✅ All orders marked done!','success');
+  if(_online){ for(var i=0;i<ids.length;i++) await sheetsCall('updateKitchenOrder',{id:ids[i],status:'done'}); }
+}
+
+// Print Ticket
+function printTicket(o, silent){
+  if(!o) return;
+  var lines = [
+    '================================',
+    '      ** KITCHEN ORDER **',
+    '================================',
+    'Order #: '+String(o.orderNum||o.id||'').padStart(4,'0'),
+    'Table:   '+(o.table||'Takeout'),
+    o.customer?'Name:    '+o.customer:'',
+    'Time:    '+new Date().toLocaleTimeString('en-PH'),
+    o.cashier?'Cashier: '+o.cashier:'',
+    '--------------------------------'
+  ];
+  (o.items||[]).forEach(function(item){ lines.push('  x'+(item.qty||1)+'  '+(item.name||item)); });
+  if(o.notes){ lines.push('--------------------------------'); lines.push('NOTE: '+o.notes); }
+  lines.push('================================');
+  lines.push(''); lines.push(''); lines.push('');
+  var text = lines.filter(Boolean).join("\n");
+
+  if(PRINTER_TYPE==='rawbt'){
+    var a=document.createElement('a'); a.href='rawbt:'+encodeURIComponent(text);
+    a.style.display='none'; document.body.appendChild(a); a.click();
+    setTimeout(function(){ try{document.body.removeChild(a);}catch(e){} },1000);
+    if(!silent) showToast('🖨️ Sending to printer…','success');
+  } else {
+    var css='@page{margin:0;size:80mm auto}body{font-family:"Courier New",monospace;font-size:12px;width:72mm;margin:0 auto;padding:4mm;white-space:pre-wrap}';
+    var html='<!DOCTYPE html><html><head><meta charset="utf-8"><style>'+css+'</style></head><body>'+text+'<'+'script>window.onload=function(){window.print();setTimeout(function(){window.close()},500)}<'+'/script></body></html>';
+    var w=window.open('','_blank','width=400,height=500');
+    if(w){ w.document.write(html); w.document.close(); }
+    if(!silent) showToast('🖨️ Print dialog opened.','success');
+  }
+}
+
+// Auto-refresh
+function startAutoRefresh(){
+  if(refreshTimer) clearInterval(refreshTimer);
+  if(autoRefresh) refreshTimer=setInterval(refresh,30000);
+}
+function toggleAutoRefresh(){
+  autoRefresh=!autoRefresh;
+  document.getElementById('auto-toggle').className='toggle'+(autoRefresh?' on':'');
+  document.getElementById('auto-label').textContent='Auto-refresh '+(autoRefresh?'ON':'OFF');
+  document.getElementById('auto-badge').className='auto-badge'+(autoRefresh?' active':'');
+  startAutoRefresh();
+  showToast(autoRefresh?'Auto-refresh enabled (30s)':'Auto-refresh disabled','success');
+}
+
+// Printer Settings
+function toggleSettings(){ document.getElementById('settings-panel').classList.toggle('open'); }
+function updatePType(){
+  var t=document.getElementById('p-type').value;
+  document.getElementById('p-ip-group').style.display=t==='browser'?'block':'none';
+}
+function loadPrinterSettings(){
+  document.getElementById('p-type').value=PRINTER_TYPE;
+  document.getElementById('p-ip').value=PRINTER_IP;
+  document.getElementById('p-auto').value=AUTO_PRINT?'yes':'no';
+  updatePType();
+}
+function saveSettings(){
+  PRINTER_TYPE=document.getElementById('p-type').value;
+  PRINTER_IP  =document.getElementById('p-ip').value.trim();
+  AUTO_PRINT  =document.getElementById('p-auto').value==='yes';
+  localStorage.setItem('gtg_kitchen_printer',JSON.stringify({type:PRINTER_TYPE,ip:PRINTER_IP,auto:AUTO_PRINT?'yes':'no'}));
+  toggleSettings();
+  showToast('✅ Printer settings saved!','success');
+}
+
+// DB Status
+function setDB(state, msg){
+  var dot = document.getElementById('db-dot');
+  var txt = document.getElementById('db-txt');
+  var pill= document.getElementById('db-pill');
+  var col = state==='ok' ? '#27AE60' : state==='loading' ? '#F39C12' : '#E74C3C';
+  var tcol= state==='ok' ? '#4ade80' : state==='loading' ? '#fbbf24' : '#f87171';
+  if(dot){ 
+    dot.style.background   = col;
+    dot.style.boxShadow    = '0 0 8px '+col;
+    dot.style.animation    = state==='loading' ? 'pulse 1s infinite' : 'none';
+  }
+  if(txt){ txt.textContent=msg; txt.style.color=tcol; }
+  if(pill){ pill.style.borderColor=col+'44'; }
+}
+
+// Toast
+var _toastTimer;
+function showToast(msg,type){
+  var el=document.getElementById('toast');
+  el.textContent=msg; el.className='toast show '+(type||'');
+  clearTimeout(_toastTimer);
+  _toastTimer=setTimeout(function(){ el.className='toast'; },3000);
+}
+</script>
+</body>
+</html>
+';
 
 // ── State ─────────────────────────────────────────────────────────────────────
 var inventory = [];
