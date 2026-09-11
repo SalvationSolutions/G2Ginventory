@@ -401,6 +401,21 @@ function _postAction(action,data){
 }
 
 async function _call(url, action, data){
+  // Credentials must never be sent through JSONP/GET. The backend intentionally
+  // rejects GET login requests with POST_REQUIRED.
+  if(action==='login'){
+    var loginCtrl=new AbortController();
+    var loginTimer=setTimeout(function(){loginCtrl.abort();},20000);
+    try{
+      var loginResp=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(Object.assign({action:action},data||{})),redirect:'follow',signal:loginCtrl.signal});
+      var loginText=await loginResp.text();
+      clearTimeout(loginTimer);
+      return JSON.parse(loginText);
+    }catch(loginErr){
+      clearTimeout(loginTimer);
+      return {ok:false,error:'LOGIN_NETWORK',message:String(loginErr&&loginErr.message||loginErr)};
+    }
+  }
   var qs='?action='+encodeURIComponent(action);
   if(data && Object.keys(data).length){
     var encoded=encodeURIComponent(JSON.stringify(data));
