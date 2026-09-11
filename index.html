@@ -3,178 +3,164 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>G2G Taverna — Kitchen Display</title>
+<title>G2G Taverna — Inventory</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Nunito:wght@400;600;700;800;900&display=swap');
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:#0d0d1a;color:#fff;font-family:Nunito,sans-serif;min-height:100vh}
+:root{--blue:#0B2545;--accent:#3A6BC5;--gold:#C9A227;--green:#27AE60;--red:#E74C3C;--gray:#f5f7fa;--border:#e0e8f5}
+html{-webkit-text-size-adjust:100%}
+body{font-family:Nunito,sans-serif;background:var(--gray);color:#1a1a2e;min-height:100vh;min-height:100dvh}
+button,input,select{font:inherit}
+button{touch-action:manipulation}
 
 /* HEADER */
-.header{background:#111122;border-bottom:2px solid #222244;padding:12px 20px;display:flex;align-items:center;justify-content:space-between}
-.header-left{display:flex;align-items:center;gap:12px}
-.header-left h1{font-family:Cinzel,serif;font-size:18px;color:#fff;letter-spacing:1px}
-.clock{font-size:22px;font-weight:900;color:#C9A227;letter-spacing:2px;font-family:'Courier New',monospace}
-.db-dot{width:10px;height:10px;border-radius:50%;background:#E74C3C;display:inline-block;margin-right:5px;flex-shrink:0;transition:.3s}
-.db-dot.ok{background:#27AE60;box-shadow:0 0 8px #27AE60}
-.db-dot.loading{background:#F39C12;animation:pulse 1s infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.2}}
-#conn-badge.ok{background:rgba(39,174,96,.1);border-color:rgba(39,174,96,.3)!important}
-#conn-badge.err{background:rgba(231,76,60,.1);border-color:rgba(231,76,60,.3)!important}
-.status-txt{font-size:11px;font-weight:700;opacity:.7}
+.header{background:var(--blue);color:#fff;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.header-title{display:flex;align-items:center;gap:10px;min-width:0}
+.header-title h1{font-family:Cinzel,serif;font-size:16px;letter-spacing:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.header-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.db-status{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;background:rgba(255,255,255,.1)}
+.db-dot{width:8px;height:8px;border-radius:50%;background:#888;flex-shrink:0}
+.db-status.connected{background:rgba(39,174,96,.15);border:1px solid rgba(39,174,96,.3)}
+.db-status.connected .db-dot{background:#27AE60;box-shadow:0 0 6px #27AE60}
+.db-status.disconnected{background:rgba(231,76,60,.15);border:1px solid rgba(231,76,60,.3)}
+.db-status.disconnected .db-dot{background:#E74C3C}
+.db-status.loading{background:rgba(243,156,18,.1);border:1px solid rgba(243,156,18,.2)}
+.db-status.loading .db-dot{background:#F39C12;animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
 
 /* TOOLBAR */
-.toolbar{background:#111122;padding:10px 20px;display:flex;align-items:center;gap:8px;border-bottom:1px solid #222244}
-.toolbar-stats{display:flex;gap:16px;margin-right:auto}
-.t-stat{text-align:center}
-.t-stat-num{font-size:20px;font-weight:900;color:#C9A227}
-.t-stat-label{font-size:10px;color:#888;font-weight:700;text-transform:uppercase}
-.btn{padding:8px 16px;border:none;border-radius:8px;font-family:Nunito,sans-serif;font-weight:800;font-size:12px;cursor:pointer}
-.btn-refresh{background:#222244;color:#fff;border:1px solid #333366}
-.btn-print{background:#E65100;color:#fff}
-.btn-done-all{background:#27AE60;color:#fff}
+.toolbar{padding:14px 20px;background:#fff;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.toolbar h2{font-family:Cinzel,serif;font-size:18px;color:var(--blue);margin-right:auto}
+.btn{padding:9px 16px;border:none;border-radius:8px;font-family:Nunito,sans-serif;font-weight:800;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:5px;transition:.2s;min-height:38px;white-space:nowrap}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-green{background:var(--green);color:#fff}
+.btn-red{background:var(--red);color:#fff}
+.btn-dark{background:var(--blue);color:#fff}
+.btn-outline{background:#fff;color:var(--accent);border:2px solid var(--accent)}
+.btn:hover{opacity:.85}
+.btn:active{transform:scale(.97)}
 
-/* AUTO REFRESH TOGGLE */
-.auto-badge{display:flex;align-items:center;gap:6px;background:#222244;border-radius:20px;padding:5px 12px;font-size:11px;font-weight:700;color:#888;cursor:pointer;border:1px solid #333366}
-.auto-badge.active{color:#27AE60;border-color:#27AE60}
-.toggle{width:28px;height:15px;border-radius:10px;background:#555;position:relative;transition:.2s}
-.toggle.on{background:#27AE60}
-.toggle::after{content:'';position:absolute;width:11px;height:11px;border-radius:50%;background:#fff;top:2px;left:2px;transition:.2s}
-.toggle.on::after{left:15px}
+/* SEARCH + FILTERS */
+.controls{padding:12px 20px;background:#fff;border-bottom:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.search-box{flex:1;min-width:200px;padding:10px 14px;border:2px solid var(--border);border-radius:8px;font-family:Nunito,sans-serif;font-size:16px;outline:none}
+.search-box:focus{border-color:var(--accent)}
+#cat-filters{display:flex;gap:8px;flex-wrap:wrap;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:2px}
+.cat-filter{padding:7px 14px;border:2px solid var(--border);border-radius:20px;font-family:Nunito,sans-serif;font-size:11px;font-weight:700;cursor:pointer;background:#fff;color:#555;transition:.15s;flex-shrink:0}
+.cat-filter.active{background:var(--accent);border-color:var(--accent);color:#fff}
 
-/* ORDERS GRID */
-.orders-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;padding:20px}
+/* STATS */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:16px 20px}
+.stat-card{background:#fff;border-radius:12px;padding:16px;border:1px solid var(--border);text-align:center;min-width:0}
+.stat-num{font-size:28px;font-weight:900;color:var(--blue);word-break:break-word}
+.stat-num.warn{color:#E67E22}
+.stat-num.danger{color:var(--red)}
+.stat-label{font-size:11px;color:#888;font-weight:700;text-transform:uppercase;margin-top:4px}
 
-/* ORDER CARD */
-.order-card{border-radius:14px;border:2px solid #222244;overflow:hidden;transition:border-color .3s}
-.order-card.green{border-color:#27AE60}
-.order-card.orange{border-color:#E67E22}
-.order-card.red{border-color:#E74C3C;animation:urgentPulse 2s infinite}
-@keyframes urgentPulse{0%,100%{border-color:#E74C3C}50%{border-color:#ff6b6b}}
-.card-header{padding:12px 16px;display:flex;align-items:center;justify-content:space-between}
-.card-header.green{background:rgba(39,174,96,.15)}
-.card-header.orange{background:rgba(230,126,34,.15)}
-.card-header.red{background:rgba(231,76,60,.2)}
-.order-num{font-size:18px;font-weight:900}
-.order-table{font-size:12px;opacity:.7;margin-top:2px}
-.timer-badge{padding:4px 10px;border-radius:20px;font-size:12px;font-weight:900;font-family:'Courier New',monospace}
-.timer-badge.green{background:rgba(39,174,96,.3);color:#4ade80}
-.timer-badge.orange{background:rgba(230,126,34,.3);color:#fb923c}
-.timer-badge.red{background:rgba(231,76,60,.3);color:#f87171}
-.card-body{padding:12px 16px;background:#13132a}
-.item-row{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #1e1e3a;font-size:14px}
-.item-row:last-child{border-bottom:none}
-.item-qty{background:#222244;border-radius:6px;padding:2px 8px;font-weight:900;font-size:13px;color:#C9A227;min-width:32px;text-align:center}
-.item-name{flex:1;font-weight:600}
-.note-row{margin-top:8px;padding:8px;background:rgba(201,162,39,.1);border-radius:8px;border-left:3px solid #C9A227;font-size:12px;color:#C9A227}
-.customer-row{font-size:11px;color:#888;margin-top:4px}
-.card-footer{padding:10px 16px;background:#0d0d1a;border-top:1px solid #1e1e3a;display:flex;gap:8px}
-.btn-done{flex:1;padding:10px;background:#27AE60;border:none;border-radius:8px;color:#fff;font-family:Nunito,sans-serif;font-weight:900;font-size:13px;cursor:pointer;transition:.2s}
-.btn-done:hover{background:#219a52}
-.btn-print-ticket{padding:10px 14px;background:#222244;border:1px solid #333366;border-radius:8px;color:#fff;font-family:Nunito,sans-serif;font-weight:800;font-size:12px;cursor:pointer}
+/* TABLE */
+.table-wrap{padding:0 20px 20px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{width:100%;border-collapse:collapse;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+th{background:var(--blue);color:#fff;padding:10px 14px;font-size:11px;text-align:left;white-space:nowrap}
+td{padding:10px 14px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#f8faff}
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:800}
+.badge-ok{background:#e8f5e9;color:#27AE60}
+.badge-low{background:#fff3e0;color:#E67E22}
+.badge-out{background:#fdecea;color:var(--red)}
+.action-btns{display:flex;gap:6px}
+.icon-btn{width:34px;height:34px;border:none;border-radius:6px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;transition:.15s}
+.icon-btn:hover{opacity:.75}
+.icon-btn:active{transform:scale(.93)}
 
-/* EMPTY STATE */
-.empty-state{text-align:center;padding:80px 20px;color:#444}
-.empty-state .icon{font-size:64px;margin-bottom:16px}
-.empty-state h2{font-family:Cinzel,serif;font-size:20px;color:#666;margin-bottom:8px}
-.empty-state p{font-size:13px;color:#555}
-
-/* DONE OVERLAY */
-.done-overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);display:none;align-items:center;justify-content:center;z-index:999}
-.done-overlay.show{display:flex}
-.done-card{background:#111122;border:2px solid #27AE60;border-radius:20px;padding:40px;text-align:center;animation:popIn .3s}
-@keyframes popIn{from{transform:scale(.8);opacity:0}to{transform:scale(1);opacity:1}}
-.done-icon{font-size:64px;margin-bottom:16px}
-.done-title{font-family:Cinzel,serif;font-size:24px;color:#27AE60}
-.done-sub{color:#888;margin-top:8px;font-size:14px}
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:999;padding:20px}
+.modal-overlay.active{display:flex}
+.modal{background:#fff;border-radius:16px;padding:24px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.modal h3{font-family:Cinzel,serif;font-size:17px;color:var(--blue);margin-bottom:18px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.form-group{display:flex;flex-direction:column;gap:4px;min-width:0}
+.form-group.full{grid-column:1/-1}
+.form-group label{font-size:11px;font-weight:800;color:var(--blue);text-transform:uppercase;letter-spacing:.4px}
+.form-group input,.form-group select{border:2px solid var(--border);border-radius:8px;padding:10px 12px;font-family:Nunito,sans-serif;font-size:16px;outline:none;width:100%}
+.form-group input:focus{border-color:var(--accent)}
+.modal-actions{display:flex;gap:8px;margin-top:18px}
+.m-save{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:12px 20px;font-family:Nunito,sans-serif;font-weight:800;font-size:14px;cursor:pointer;flex:1}
+.m-cancel{background:var(--gray);color:#555;border:2px solid var(--border);border-radius:8px;padding:12px 20px;font-family:Nunito,sans-serif;font-weight:800;font-size:14px;cursor:pointer}
 
 /* TOAST */
-.toast{position:fixed;top:80px;left:50%;transform:translateX(-50%);background:#222;color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;font-weight:700;z-index:9999;opacity:0;transition:.3s;pointer-events:none}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a2e;color:#fff;padding:11px 22px;border-radius:20px;font-size:13px;font-weight:700;z-index:9999;opacity:0;transition:.3s;pointer-events:none;white-space:nowrap}
 .toast.show{opacity:1}
 .toast.success{background:#27AE60}
-.toast.warning{background:#E67E22}
 .toast.error{background:#E74C3C}
+.toast.warning{background:#E67E22}
 
 /* LOGIN */
-#login-screen{position:fixed;inset:0;background:linear-gradient(160deg,#0d0d1a,#111133);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px}
-.login-card{background:#111122;border:1px solid #222244;border-radius:20px;padding:36px 32px;width:100%;max-width:360px;text-align:center}
+#login-screen{position:fixed;inset:0;background:linear-gradient(160deg,#0B2545,#1a4a8a);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px}
+.login-card{background:#fff;border-radius:20px;padding:36px 32px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,.3);text-align:center}
 .login-icon{font-size:52px;margin-bottom:8px}
-.login-card h1{font-family:Cinzel,serif;font-size:17px;color:#C9A227;margin-bottom:4px}
-.login-card p{font-size:12px;color:#555;margin-bottom:24px}
-.login-input{width:100%;background:#0d0d1a;border:1px solid #333366;border-radius:10px;padding:11px 14px;font-family:Nunito,sans-serif;font-size:14px;color:#fff;outline:none;margin-bottom:10px;text-align:center}
-.login-input:focus{border-color:#C9A227}
-.login-input::placeholder{color:#444}
-.login-btn{width:100%;background:#C9A227;color:#0d0d1a;border:none;border-radius:10px;padding:13px;font-family:Nunito,sans-serif;font-weight:900;font-size:14px;cursor:pointer;margin-top:4px}
+.login-card h1{font-family:Cinzel,serif;font-size:18px;color:#0B2545;margin-bottom:4px}
+.login-card p{font-size:12px;color:#888;margin-bottom:24px}
+.login-input{width:100%;border:2px solid #e0e8f5;border-radius:10px;padding:12px 14px;font-family:Nunito,sans-serif;font-size:16px;outline:none;margin-bottom:10px;text-align:center}
+.login-input:focus{border-color:#3A6BC5}
+.login-btn{width:100%;background:linear-gradient(135deg,#0B2545,#3A6BC5);color:#fff;border:none;border-radius:10px;padding:14px;font-family:Nunito,sans-serif;font-weight:900;font-size:14px;cursor:pointer;margin-top:4px}
 .login-error{color:#E74C3C;font-size:12px;font-weight:700;min-height:20px;margin-bottom:8px}
 
-/* PRINTER SETTINGS */
-.settings-panel{position:fixed;top:0;right:-320px;width:300px;max-width:88vw;height:100vh;background:#111122;border-left:1px solid #222244;padding:20px;transition:.3s;z-index:900;overflow-y:auto}
-.settings-panel.open{right:0}
-.settings-panel h3{font-family:Cinzel,serif;color:#C9A227;margin-bottom:16px;font-size:15px}
-.s-label{font-size:11px;font-weight:800;color:#888;text-transform:uppercase;margin-bottom:5px;display:block}
-.s-input{width:100%;background:#0d0d1a;border:1px solid #333366;border-radius:8px;padding:9px 12px;color:#fff;font-family:Nunito,sans-serif;font-size:13px;margin-bottom:12px;outline:none}
-.s-input:focus{border-color:#C9A227}
-.s-btn{width:100%;padding:10px;background:#C9A227;color:#0d0d1a;border:none;border-radius:8px;font-family:Nunito,sans-serif;font-weight:900;cursor:pointer;margin-top:4px}
-.s-close{background:#222244;color:#fff;margin-top:8px}
+/* EMPTY */
+.empty{text-align:center;padding:60px 20px;color:#aaa}
+.empty-icon{font-size:48px;margin-bottom:12px}
 
-/* ── RESPONSIVE: TABLET (≤1024px) ─────────────────────────────────────── */
-@media (max-width:1024px){
-  .orders-grid{grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;padding:16px}
-  .header{padding:10px 14px}
-  .toolbar{padding:8px 14px}
+/* ── RESPONSIVE ─────────────────────────────────────────────────────────── */
+
+/* Tablets and small laptops */
+@media(max-width:900px){
+  .header,.toolbar,.controls{padding-left:16px;padding-right:16px}
+  .stats{padding-left:16px;padding-right:16px}
+  .table-wrap{padding-left:16px;padding-right:16px}
 }
 
-/* ── RESPONSIVE: MOBILE (≤680px) ──────────────────────────────────────── */
-@media (max-width:680px){
-  .header{flex-wrap:wrap;row-gap:10px;padding:10px 12px}
-  .header-left h1{font-size:14px;letter-spacing:.5px}
-  .header-left span{font-size:22px!important}
-  .clock{font-size:16px;letter-spacing:1px}
-  .header > div:last-child{width:100%;justify-content:space-between;gap:8px;flex-wrap:wrap}
-  #db-pill{padding:4px 10px;order:1}
-  #user-badge{order:3;font-size:10px!important}
-  .header .btn{font-size:10px!important;padding:7px 10px}
+/* Phones */
+@media(max-width:700px){
+  .header{padding:10px 14px}
+  .header-title h1{font-size:14px}
+  .header-title span{font-size:20px!important}
+  #db-count{display:none}
+  .toolbar{padding:12px 14px}
+  .toolbar h2{width:100%;margin-right:0;margin-bottom:2px;font-size:16px}
+  .btn{flex:1 1 auto;justify-content:center;padding:10px 10px;font-size:11.5px}
+  .controls{padding:10px 14px}
+  .search-box{min-width:100%}
+  .stats{grid-template-columns:1fr 1fr;gap:10px;padding:12px 14px}
+  .stat-card{padding:12px}
+  .stat-num{font-size:22px}
+  .table-wrap{padding:0 14px 14px}
 
-  .toolbar{flex-wrap:wrap;gap:10px;padding:10px 12px}
-  .toolbar-stats{width:100%;justify-content:space-around;margin-right:0;order:1}
-  .t-stat-num{font-size:18px}
-  .auto-badge{order:2;flex:1;justify-content:center}
-  .btn-refresh,.btn-print,.btn-done-all{order:3;flex:1;min-height:40px;font-size:11px;padding:9px 8px}
+  /* Card-style table: headers hidden, each row becomes a card */
+  .table-wrap table,.table-wrap thead,.table-wrap tbody,.table-wrap th,.table-wrap td,.table-wrap tr{display:block}
+  .table-wrap thead{position:absolute;top:-9999px;left:-9999px}
+  table{box-shadow:none;background:none;border-radius:0}
+  .table-wrap tbody tr{background:#fff;border:1px solid var(--border);border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,.06);margin-bottom:10px;padding:4px 0}
+  .table-wrap tbody tr:last-child{margin-bottom:0}
+  .table-wrap td{border-bottom:1px solid var(--border);padding:9px 12px 9px 46%;position:relative;text-align:right;min-height:20px}
+  .table-wrap td:last-child{border-bottom:none}
+  .table-wrap td:before{content:attr(data-label);position:absolute;left:12px;top:9px;width:42%;text-align:left;font-weight:800;color:var(--blue);font-size:10.5px;text-transform:uppercase;letter-spacing:.3px;white-space:normal}
+  .table-wrap td.td-actions{text-align:left;padding-left:12px}
+  .table-wrap td.td-actions:before{content:none}
+  .table-wrap .action-btns{justify-content:flex-start}
+  .empty{padding:40px 14px}
 
-  .orders-grid{grid-template-columns:1fr;gap:12px;padding:12px}
-  .order-num{font-size:16px}
-  .timer-badge{font-size:11px}
-  .item-row{font-size:13px}
-  .card-footer{flex-direction:row}
-  .btn-done,.btn-print-ticket{min-height:44px}
+  .modal{padding:18px;border-radius:14px}
+  .form-grid{grid-template-columns:1fr;gap:12px}
+  .form-group.full{grid-column:1}
+  .modal-actions{position:sticky;bottom:0;background:#fff;padding-top:8px;margin-top:14px}
 
   .login-card{padding:28px 22px}
-  .settings-panel{width:100vw;max-width:100vw}
-  .done-card{padding:28px 20px;margin:0 16px}
 }
 
-/* ── RESPONSIVE: VERY SMALL PHONES (≤380px) ───────────────────────────── */
-@media (max-width:380px){
-  .header-left h1{font-size:12px}
-  .clock{font-size:14px}
-  .toolbar-stats{gap:8px}
-  .t-stat-num{font-size:16px}
-  .t-stat-label{font-size:9px}
-}
-
-/* ── RESPONSIVE: LARGE KITCHEN DISPLAYS / TVs (≥1600px) ───────────────── */
-@media (min-width:1600px){
-  .orders-grid{grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:22px;padding:28px}
-  .order-num{font-size:22px}
-  .item-name{font-size:16px}
-  .timer-badge{font-size:14px;padding:6px 14px}
-  .clock{font-size:26px}
-  .t-stat-num{font-size:24px}
-}
-
-/* Touch-friendly tap targets everywhere */
-button,.btn,.auto-badge,.item-row{touch-action:manipulation}
-@media (hover:none){
-  .btn,.btn-done,.btn-print-ticket,.s-btn,.login-btn{min-height:42px}
+/* Very small phones */
+@media(max-width:380px){
+  .stats{grid-template-columns:1fr 1fr}
+  .btn{font-size:11px;padding:9px 8px}
+  .header-title h1{font-size:12px}
 }
 </style>
 </head>
@@ -183,99 +169,128 @@ button,.btn,.auto-badge,.item-row{touch-action:manipulation}
 <!-- LOGIN SCREEN -->
 <div id="login-screen">
   <div class="login-card">
-    <div class="login-icon">🍳</div>
+    <div class="login-icon">📦</div>
     <h1>GREEK TO GO TAVERNA</h1>
-    <p>Kitchen Display — Staff Login</p>
-    <input class="login-input" id="login-user" placeholder="Username" autocomplete="username"
-      onkeydown="if(event.key==='Enter') document.getElementById('login-pass').focus()">
-    <input class="login-input" id="login-pass" placeholder="Password / PIN" type="password"
-      autocomplete="current-password" onkeydown="if(event.key==='Enter') doLogin()">
+    <p>Inventory Management — Staff Login</p>
+    <input class="login-input" id="login-user" placeholder="Username" autocomplete="username" onkeydown="if(event.key==='Enter') document.getElementById('login-pass').focus()">
+    <input class="login-input" id="login-pass" placeholder="Password / PIN" type="password" autocomplete="current-password" onkeydown="if(event.key==='Enter') doLogin()">
     <div class="login-error" id="login-error"></div>
-    <button class="login-btn" onclick="doLogin()">🔓 Enter Kitchen</button>
+    <button class="login-btn" onclick="doLogin()">🔓 Login</button>
   </div>
 </div>
 
-<!-- MAIN APP -->
+<!-- MAIN APP (hidden until login) -->
 <div id="main-app" style="display:none">
 
 <!-- HEADER -->
 <div class="header">
-  <div class="header-left">
-    <span style="font-size:28px">🍳</span>
-    <h1>GREEK TO GO — KITCHEN</h1>
+  <div class="header-title">
+    <span style="font-size:24px">📦</span>
+    <h1>G2G TAVERNA — INVENTORY</h1>
   </div>
-  <div style="display:flex;align-items:center;gap:16px">
-    <div id="db-pill" style="display:flex;align-items:center;gap:7px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:5px 13px;transition:.3s">
-      <span id="db-dot" style="width:9px;height:9px;border-radius:50%;background:#F39C12;display:inline-block;box-shadow:0 0 6px #F39C12;transition:.3s;animation:pulse 1s infinite"></span>
-      <span id="db-txt" style="font-size:11px;font-weight:800;color:#fbbf24">Connecting…</span>
+  <div class="header-right">
+    <span id="user-badge" style="font-size:11px;color:rgba(255,255,255,.6);font-weight:700"></span>
+    <div id="db-status" style="display:flex;align-items:center;gap:7px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:20px;padding:5px 13px;font-size:11px;font-weight:800;transition:.3s">
+      <span id="db-dot" style="width:9px;height:9px;border-radius:50%;background:#F39C12;display:inline-block;transition:.3s;box-shadow:0 0 6px #F39C12;flex-shrink:0"></span>
+      <span id="db-txt">Connecting…</span>
     </div>
-    <div class="clock" id="clock">--:--:--</div>
-    <button class="btn" style="background:#222244;color:#C9A227;border:1px solid #C9A227;font-size:11px" onclick="toggleSettings()">⚙️ Printer</button>
-    <span id="user-badge" style="font-size:11px;color:rgba(255,255,255,.5);font-weight:700"></span>
-    <button class="btn" style="background:#1a0a0a;color:#E74C3C;border:1px solid #E74C3C;font-size:11px" onclick="doLogout()">🚪 Logout</button>
+    <span id="db-count" style="font-size:11px;opacity:.5"></span>
+    <button onclick="doLogout()" style="background:rgba(231,76,60,.15);border:1px solid rgba(231,76,60,.4);color:#E74C3C;border-radius:8px;padding:7px 12px;font-size:11px;font-weight:800;cursor:pointer;min-height:34px">🚪 Logout</button>
   </div>
 </div>
 
 <!-- TOOLBAR -->
 <div class="toolbar">
-  <div class="toolbar-stats">
-    <div class="t-stat"><div class="t-stat-num" id="stat-pending">0</div><div class="t-stat-label">Pending</div></div>
-    <div class="t-stat"><div class="t-stat-num" style="color:#E74C3C" id="stat-urgent">0</div><div class="t-stat-label">Urgent (&gt;10min)</div></div>
-    <div class="t-stat"><div class="t-stat-num" style="color:#27AE60" id="stat-done-today">0</div><div class="t-stat-label">Done Today</div></div>
-  </div>
-  <div class="auto-badge" id="auto-badge" onclick="toggleAutoRefresh()">
-    <div class="toggle on" id="auto-toggle"></div>
-    <span id="auto-label">Auto-refresh ON</span>
-  </div>
-  <button class="btn btn-refresh" onclick="refresh()">🔄 Refresh</button>
-  <button class="btn btn-done-all" onclick="markAllDone()">✅ Mark All Done</button>
+  <h2>📦 Inventory Management</h2>
+  <button class="btn btn-dark" onclick="importFromSheets()">⬇ Import from Sheet</button>
+  <button class="btn btn-outline" id="refresh-inventory-btn" onclick="refreshInventory()">↻ Refresh</button>
+  <button class="btn btn-green" onclick="backupToSheets()">⬆ Backup to Sheet</button>
+  <button class="btn btn-red" onclick="fixSheet()">🔧 Fix Sheet</button>
+  <button class="btn btn-primary" onclick="openAddModal()">+ Add Item</button>
+  <button class="btn btn-outline" onclick="retryPendingWrites()" id="retry-sync-btn" style="display:none">🔄 Retry Sync</button>
+  <span id="sync-retry-status" style="font-size:11px;font-weight:800;color:#E67E22;display:none"></span>
 </div>
 
-<!-- ORDERS GRID -->
-<div class="orders-grid" id="orders-grid"></div>
-
-<!-- DONE OVERLAY -->
-<div class="done-overlay" id="done-overlay">
-  <div class="done-card">
-    <div class="done-icon">✅</div>
-    <div class="done-title" id="done-title">Order Done!</div>
-    <div class="done-sub" id="done-sub">Order marked as complete</div>
-  </div>
+<!-- SEARCH + CATEGORY FILTERS -->
+<div class="controls">
+  <input class="search-box" id="search" placeholder="🔍 Search items by name or category…" oninput="renderTable()">
+  <div id="cat-filters"></div>
 </div>
 
-<!-- PRINTER SETTINGS PANEL -->
-<div class="settings-panel" id="settings-panel">
-  <h3>🖨️ Kitchen Printer</h3>
-  <label class="s-label">Printer Type</label>
-  <select id="p-type" class="s-input" onchange="updatePType()">
-    <option value="rawbt">RawBT (XP-58IID via Bluetooth)</option>
-    <option value="browser">Browser Print (WiFi Printer)</option>
-  </select>
-  <div id="p-ip-group" style="display:none">
-    <label class="s-label">Printer IP Address</label>
-    <input id="p-ip" class="s-input" placeholder="e.g. 192.168.1.105">
-  </div>
-  <label class="s-label">Auto-print new orders</label>
-  <select id="p-auto" class="s-input">
-    <option value="yes">Yes — print automatically</option>
-    <option value="no">No — tap Print manually</option>
-  </select>
-  <button class="s-btn" onclick="saveSettings()">💾 Save Settings</button>
-  <button class="s-btn s-close" onclick="toggleSettings()">✕ Close</button>
-  <div style="margin-top:20px;padding:12px;background:#0d0d1a;border-radius:8px;font-size:11px;color:#666;line-height:1.6">
-    <b style="color:#C9A227">RawBT Setup:</b><br>
-    1. Install RawBT from Play Store<br>
-    2. Pair XP-58IID in Bluetooth Settings<br>
-    3. Open RawBT → select XP-58IID<br>
-    4. Come back here → Printer Type: RawBT<br>
-    5. Enable Auto-print ✅
+<!-- STATS -->
+<div class="stats">
+  <div class="stat-card"><div class="stat-num" id="stat-total">0</div><div class="stat-label">Total Items</div></div>
+  <div class="stat-card"><div class="stat-num warn" id="stat-low">0</div><div class="stat-label">Low Stock (≤5)</div></div>
+  <div class="stat-card"><div class="stat-num danger" id="stat-out">0</div><div class="stat-label">Out of Stock</div></div>
+  <div class="stat-card"><div class="stat-num" id="stat-value">₱0</div><div class="stat-label">Inventory Value</div></div>
+</div>
+
+<!-- TABLE -->
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Item Code</th>
+        <th>Description</th>
+        <th>Category</th>
+        <th>Price</th>
+        <th>Unit</th>
+        <th>UOM</th>
+        <th>Beg. Bal.</th>
+        <th>Ending Stock</th>
+        <th>Status</th>
+        <th>Supplier</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="inv-tbody"></tbody>
+  </table>
+</div>
+
+<!-- ADD/EDIT MODAL -->
+<div class="modal-overlay" id="item-modal">
+  <div class="modal">
+    <h3 id="modal-title">➕ Add Inventory Item</h3>
+    <div class="form-grid">
+      <div class="form-group"><label>Item Code</label><input id="m-code" placeholder="e.g. G2G-001"></div>
+      <div class="form-group"><label>Category</label>
+        <input id="m-cat" list="cat-list" placeholder="e.g. Dairy" autocomplete="off">
+        <datalist id="cat-list"></datalist>
+      </div>
+      <div class="form-group full"><label>Item Description</label><input id="m-name" placeholder="e.g. Extra Virgin Olive Oil"></div>
+      <div class="form-group"><label>Price (₱)</label><input type="number" id="m-price" placeholder="0.00" min="0" step="0.01"></div>
+      <div class="form-group"><label>Supplier</label><input id="m-supplier" placeholder="e.g. ABC Trading"></div>
+      <div class="form-group"><label>Unit</label><input id="m-unit" placeholder="e.g. 1 box, 500g"></div>
+      <div class="form-group"><label>UOM</label><input id="m-uom" placeholder="e.g. pcs, kg, btl"></div>
+      <div class="form-group"><label>Beg. Bal. Stocks</label><input type="number" id="m-begbal" placeholder="0" min="0"></div>
+      <div class="form-group"><label>Ending Stocks</label><input type="number" id="m-ending" placeholder="0" min="0"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="m-save" onclick="saveItem()">💾 Save Item</button>
+      <button class="m-cancel" onclick="closeModal('item-modal')">Cancel</button>
+    </div>
   </div>
 </div>
 
 <div class="toast" id="toast"></div>
 
 </div><!-- end main-app -->
+
 <script>
+// ── Config ────────────────────────────────────────────────────────────────────
+// Google Apps Script URL — hardcoded v8.5.1 database-login / two-way-sync deployment.
+try{localStorage.removeItem('gtg_stock_inventory');}catch(e){}
+try{localStorage.removeItem('gtg_sheets_url');}catch(e){}
+var SHEETS_URL = 'https://script.google.com/macros/s/AKfycbxuJNiAd0UH9nZ8Zc7IIxxfSvrKdFVPoEFBollzgtHlviBWJdyGLVtQ4f2Q3ADjiyr_rw/exec';
+
+// ── State ─────────────────────────────────────────────────────────────────────
+var inventory = [];
+var editingId = null;
+var activeCat = 'All';
+var _online   = false;
+var sessionToken = '';
+var backendUser = null;
+
 // ── Credentials ──────────────────────────────────────────────────────────────
 var STAFF = [
   {username:'owner',    password:'1234', role:'Owner'},
@@ -287,276 +302,427 @@ var STAFF = [
 ];
 var currentUser = null;
 
-function doLogin(){
-  var user  = (document.getElementById('login-user').value||'').trim();
-  var pass  = (document.getElementById('login-pass').value||'').trim();
+async function doLogin(){
+  var user = (document.getElementById('login-user').value||'').trim();
+  var pass = (document.getElementById('login-pass').value||'').trim();
   var errEl = document.getElementById('login-error');
+  var btn = document.querySelector('.login-btn');
   errEl.textContent = '';
-  var found = STAFF.find(function(s){
-    return s.username.toLowerCase()===user.toLowerCase() && s.password===pass;
-  });
-  if(!found){ errEl.textContent = '❌ Wrong username or password.'; return; }
-  currentUser = found;
-  document.getElementById('login-screen').style.display = 'none';
-  document.getElementById('main-app').style.display = 'block';
-  var badge = document.getElementById('user-badge');
-  if(badge) badge.textContent = '👤 '+found.username;
-  initKitchen();
+  if(!user || !pass){ errEl.textContent='❌ Enter username and PIN.'; return; }
+  if(btn){btn.disabled=true;btn.textContent='🔄 Signing in…';}
+  try{
+    var res = await _call(SHEETS_URL,'login',{username:user,pin:pass});
+    if(!res || !res.ok || !res.sessionToken){
+      if(!res){ errEl.textContent='❌ Cannot reach Apps Script. Check deployment access.'; }
+      else if(res.error==='TOO_MANY_ATTEMPTS'){ errEl.textContent='❌ Too many attempts. Try again later.'; }
+      else if(res.error==='USER_NOT_FOUND'){ errEl.textContent='❌ Username not found in Cashiers database.'; }
+      else if(res.error==='PIN_MISMATCH'){ errEl.textContent='❌ PIN does not match the Cashiers database.'; }
+      else if(res.error==='NO_SPREADSHEET'){ errEl.textContent='❌ Backend is not connected to your Google Sheet.'; }
+      else { errEl.textContent='❌ Login failed: '+(res.error||'BACKEND_ERROR'); }
+      return;
+    }
+    sessionToken = res.sessionToken;
+    backendUser = res.user || {name:user,role:''};
+    currentUser = backendUser;
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('main-app').style.display = 'block';
+    var userBadge = document.getElementById('user-badge');
+    if(userBadge) userBadge.textContent = '👤 '+(backendUser.name||user)+' ('+(backendUser.role||'User')+')';
+    document.getElementById('login-pass').value = '';
+    await initApp();
+  }catch(e){
+    errEl.textContent='❌ Cannot reach login backend. Check deployment URL/access.';
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent='🔓 Login';}
+  }
 }
 
-function doLogout(){
-  if(!confirm('Logout from Kitchen Display?')) return;
+// ── Google Sheets is the only inventory source of truth ─────────────────────
+function loadLocal(){ inventory=[]; }
+function saveLocal(){ return false; }
+var _pendingInventory=null;
+var _retryTimer=null;
+var _retryAttempt=0;
+var _retryRunning=false;
+
+function normalizeItem(it,idx){
+  function g(keys){ for(var k=0;k<keys.length;k++){ var v=it[keys[k]]; if(v!==undefined&&v!==null&&String(v).trim()!=='') return String(v).trim(); } return ''; }
+  return {
+    id:          it.id || (idx+1),
+    itemCode:    g(['itemCode','ITEM CODE','item_code']),
+    description: g(['description','ITEM DESCRIPTION','name','Description']),
+    category:    g(['category','CATEGORY','cat','Category']),
+    price:       parseFloat(g(['price','PRICE','Price']))||0,
+    unit:        g(['unit','UNIT']),
+    uom:         g(['uom','UOM','Uom']),
+    begBal:      parseInt(g(['begBal','BEG BAL STOCKS','BEG BAL']))||0,
+    endingStock: parseInt(g(['endingStock','ENDING STOCKS','ENDING','stock']))||0,
+    supplier:    g(['supplier','SUPPLIER','Supplier'])
+  };
+}
+
+// ── Sheets API ────────────────────────────────────────────────────────────────
+// All standalone inventory reads/writes use JSONP. Inventory writes are chunked so each request stays small.
+function _jsonp(fullUrl){
+  return new Promise(function(resolve,reject){
+    var cb='cb_'+Date.now()+'_'+Math.random().toString(36).slice(2);
+    var script=document.createElement('script');
+    var done=false;
+    var timer=setTimeout(function(){ if(done)return; done=true; cleanup(); reject(new Error('JSONP timeout')); },20000);
+    function cleanup(){ clearTimeout(timer); try{ if(script.parentNode) script.parentNode.removeChild(script); }catch(e){} try{ delete window[cb]; }catch(e){} }
+    window[cb]=function(d){ if(done)return; done=true; cleanup(); resolve(d); };
+    script.onerror=function(){ if(done)return; done=true; cleanup(); reject(new Error('JSONP request failed')); };
+    script.src=fullUrl+(fullUrl.indexOf('?')>-1?'&':'?')+'callback='+cb;
+    document.head.appendChild(script);
+  });
+}
+
+function _fetchTransport(fullUrl){
+  return new Promise(function(resolve,reject){
+    var ctrl=new AbortController();
+    var timer=setTimeout(function(){ctrl.abort();},20000);
+    fetch(fullUrl,{method:'GET',signal:ctrl.signal})
+      .then(function(r){clearTimeout(timer); return r.text();})
+      .then(function(t){resolve(JSON.parse(t));})
+      .catch(function(e){clearTimeout(timer); reject(e);});
+  });
+}
+
+// Match the transport used by the working POS: JSONP for small requests,
+// POST for large writes. The live Apps Script already supports saveInventory.
+function _postAction(action,data){
+  var body=Object.assign({action:action},data||{});
+  var ctrl=new AbortController();
+  var timer=setTimeout(function(){ctrl.abort();},30000);
+  return fetch(SHEETS_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(body),signal:ctrl.signal})
+    .then(function(r){clearTimeout(timer);return r.text();})
+    .then(function(t){try{return JSON.parse(t);}catch(e){throw new Error('Invalid backend response');}})
+    .catch(function(e){clearTimeout(timer);throw e;});
+}
+
+async function _call(url, action, data){
+  var qs='?action='+encodeURIComponent(action);
+  if(data && Object.keys(data).length){
+    var encoded=encodeURIComponent(JSON.stringify(data));
+    if(encoded.length>1800){
+      try{
+        var ctrl=new AbortController();
+        var timer=setTimeout(function(){ctrl.abort();},30000);
+        var r=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(Object.assign({action:action},data)),signal:ctrl.signal});
+        clearTimeout(timer);
+        return await r.json();
+      }catch(e){ return null; }
+    }
+    qs+='&payload='+encoded;
+  }
+  var fullUrl=url+qs;
+  try{return await _jsonp(fullUrl);}catch(e){
+    try{return await _fetchTransport(fullUrl);}catch(e2){return null;}
+  }
+}
+
+function sheetsCall(action, body){
+  return new Promise(async function(resolve){
+    if(!SHEETS_URL){resolve(null);return;}
+    var payload=Object.assign({},body||{});
+    if(action!=='ping' && action!=='login' && sessionToken) payload.sessionToken=sessionToken;
+    var result=await _call(SHEETS_URL,action,payload);
+    if(result && result.authRequired){
+      sessionToken=''; backendUser=null; _online=false;
+      setStatus('disconnected','Session expired');
+    } else if(result!==null){ _online=true; setStatus('connected','Google Sheets ✓'); }
+    resolve(result);
+  });
+}
+
+function scheduleRetry(){
+  if(!_pendingInventory || _retryTimer || _retryRunning) return;
+  var delay=Math.min(60000,5000*Math.pow(2,Math.min(_retryAttempt,4)));
+  var status=document.getElementById('sync-retry-status'), btn=document.getElementById('retry-sync-btn');
+  if(status){status.style.display='inline';status.textContent='Retry in '+Math.ceil(delay/1000)+'s';}
+  if(btn) btn.style.display='inline-flex';
+  _retryTimer=setTimeout(function(){_retryTimer=null;retryPendingWrites(true);},delay);
+}
+async function retryPendingWrites(silent){
+  if(!_pendingInventory || _retryRunning) return false;
+  _retryRunning=true;
+  var status=document.getElementById('sync-retry-status');
+  if(status){status.style.display='inline';status.textContent='Retrying…';}
+  var candidate=_pendingInventory;
+  var ok=await backupToSheets(candidate,true);
+  _retryRunning=false;
+  if(ok){
+    inventory=candidate; _pendingInventory=null; _retryAttempt=0; renderTable();
+    var btn=document.getElementById('retry-sync-btn'); if(btn) btn.style.display='none';
+    if(status){status.style.display='none';status.textContent='';}
+    if(!silent) showToast('✅ Inventory sync recovered.','success');
+    return true;
+  }
+  _retryAttempt++;
+  scheduleRetry();
+  if(!silent) showToast('❌ Sync still failing. Will retry again.','error');
+  return false;
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', function(){
+  // Focus username field on load
+  setTimeout(function(){ var el=document.getElementById('login-user'); if(el) el.focus(); }, 200);
+});
+
+async function initApp(){
+  inventory=[];
+  renderTable();
+  setStatus('loading','Connecting…');
+  var ping = await sheetsCall('ping');
+  if(ping && ping.ok){
+    _online = true;
+    setStatus('connected','Google Sheets ✓');
+    showToast('✅ Connected! Importing inventory…','success');
+    await importFromSheets(true);
+  } else {
+    setStatus('disconnected','Offline — tap to retry');
+    showToast('⚠️ Cannot reach Google Sheets. Inventory was not loaded locally.','warning');
+    renderTable();
+  }
+}
+
+// ── Refresh inventory from Google Sheets ───────────────────────────────────────
+async function refreshInventory(){
+  var btn = document.getElementById('refresh-inventory-btn');
+  if(btn){
+    btn.disabled = true;
+    btn.innerHTML = '⟳ Refreshing…';
+    btn.style.opacity = '.7';
+  }
+  try{
+    showToast('🔄 Refreshing inventory from Google Sheets…','info');
+    setStatus('loading','Refreshing…');
+    var res = await sheetsCall('getInventory');
+    if(res && res.ok && Array.isArray(res.items)){
+      inventory = res.items.map(normalizeItem).filter(function(i){
+        return i.itemCode || i.description || i.category;
+      });
+      renderTable();
+      setStatus('connected','Google Sheets ✓');
+      showToast('✅ Inventory refreshed — '+inventory.length+' items loaded.','success');
+      return true;
+    }
+    setStatus('disconnected','Refresh failed');
+    showToast('❌ Refresh failed — no inventory data returned.','error');
+    return false;
+  }catch(e){
+    setStatus('disconnected','Refresh failed');
+    showToast('❌ Refresh failed: '+(e.message||'Connection error'),'error');
+    return false;
+  }finally{
+    if(btn){
+      btn.disabled = false;
+      btn.innerHTML = '↻ Refresh';
+      btn.style.opacity = '1';
+    }
+  }
+}
+
+// ── Import ────────────────────────────────────────────────────────────────────
+async function importFromSheets(silent){
+  if(!silent && !confirm('Replace local inventory with Google Sheets data?')) return;
+  showToast('⬇ Importing…','info');
+  var res = await sheetsCall('getInventory');
+  if(res && res.items && res.items.length){
+    inventory = res.items.map(normalizeItem).filter(function(i){ return i.itemCode||i.description||i.category; });
+    renderTable();
+    if(!silent) showToast('✅ Imported '+inventory.length+' items!','success');
+    setStatus('connected','Google Sheets ✓');
+  } else {
+    if(!silent) showToast('⚠️ No data returned from Sheet.','warning');
+  }
+}
+
+// ── Backup ────────────────────────────────────────────────────────────────────
+async function backupToSheets(nextInventory, silent){
+  var source=Array.isArray(nextInventory)?nextInventory:inventory;
+  if(!SHEETS_URL){ if(!silent) showToast('❌ Google Sheets URL is not configured. Nothing was saved.','error'); return false; }
+  if(!source.length){ if(!silent) showToast('⚠️ Add at least one item before saving.','warning'); return false; }
+  if(!silent) showToast('⬆ Saving '+source.length+' item(s) to Google Sheets…','info');
+
+  // Use the same saveInventory action and transport as the working POS.
+  // The transport automatically uses POST when the full inventory payload is large.
+  var rows=source.map(function(i){
+    return {
+      itemCode:i.itemCode, description:i.description, category:i.category,
+      price:i.price, unit:i.unit, uom:i.uom, begBal:i.begBal,
+      endingStock:i.endingStock, supplier:i.supplier
+    };
+  });
+  try{
+    var res=await sheetsCall('saveInventory',{items:rows});
+    if(!res || !res.ok) throw new Error((res&&res.error)||'No response from Apps Script');
+    _online=true; setStatus('connected','Google Sheets ✓');
+    if(!silent) showToast('✅ Saved '+rows.length+' item(s) to Google Sheets!','success');
+    return true;
+  }catch(e){
+    _online=false; setStatus('disconnected','Sync failed — retry pending');
+    _pendingInventory=source.map(function(i){return Object.assign({},i);});
+    scheduleRetry();
+    if(!silent) showToast('❌ Save failed: '+(e.message||'Connection error')+'. Will retry.','error');
+    return false;
+  }
+}
+
+// ── Fix Sheet ─────────────────────────────────────────────────────────────────
+async function fixSheet(){
+  showToast('🔧 Cleaning blank rows…','info');
+  var res = await sheetsCall('cleanInventorySheet');
+  if(res && res.ok){ showToast('✅ Removed '+res.removed+' blank rows. Kept '+res.kept+'.','success'); await importFromSheets(true); }
+  else showToast('❌ Fix failed.','error');
+}
+
+// ── Save Item ─────────────────────────────────────────────────────────────────
+async function saveItem(){
+  var item={id:editingId||Date.now(),itemCode:document.getElementById('m-code').value.trim(),description:document.getElementById('m-name').value.trim(),category:document.getElementById('m-cat').value.trim(),price:parseFloat(document.getElementById('m-price').value)||0,unit:document.getElementById('m-unit').value.trim(),uom:document.getElementById('m-uom').value.trim(),begBal:parseInt(document.getElementById('m-begbal').value)||0,endingStock:parseInt(document.getElementById('m-ending').value)||0,supplier:document.getElementById('m-supplier').value.trim()};
+  if(!item.description&&!item.itemCode){showToast('Enter a description or item code.','error');return;}
+  var candidate=inventory.map(function(i){return Object.assign({},i);});
+  if(editingId) candidate=candidate.map(function(i){return i.id===editingId?item:i;}); else candidate.push(item);
+  var ok=await backupToSheets(candidate,false);
+  if(!ok) return;
+  inventory=candidate; closeModal(); renderTable();
+  showToast(editingId?'✅ Item updated!':'✅ Item added!','success');
+}
+
+// ── Delete ────────────────────────────────────────────────────────────────────
+async function deleteItem(id){
+  if(!confirm('Delete this item from Google Sheets?')) return;
+  var candidate=inventory.filter(function(i){return i.id!==id;});
+  if(!candidate.length){showToast('At least one item must remain for a Sheets save.','warning');return;}
+  var ok=await backupToSheets(candidate,false);
+  if(!ok) return;
+  inventory=candidate; renderTable(); showToast('✅ Item deleted from Google Sheets.','success');
+}
+
+// ── Edit ──────────────────────────────────────────────────────────────────────
+function editItem(id){
+  var item = inventory.find(function(i){ return i.id===id; });
+  if(!item) return;
+  editingId = id;
+  document.getElementById('modal-title').textContent = '✏️ Edit Item';
+  document.getElementById('m-code').value     = item.itemCode||'';
+  document.getElementById('m-name').value     = item.description||'';
+  document.getElementById('m-cat').value      = item.category||'';
+  document.getElementById('m-price').value    = item.price||0;
+  document.getElementById('m-unit').value     = item.unit||'';
+  document.getElementById('m-uom').value      = item.uom||'';
+  document.getElementById('m-begbal').value   = item.begBal||0;
+  document.getElementById('m-ending').value   = item.endingStock||0;
+  document.getElementById('m-supplier').value = item.supplier||'';
+  openModal();
+}
+
+// ── Render ────────────────────────────────────────────────────────────────────
+function renderTable(){
+  var search = (document.getElementById('search')||{}).value||'';
+  var q = search.toLowerCase();
+  // Categories
+  var cats = ['All'].concat([...new Set(inventory.map(function(i){ return i.category||''; }).filter(Boolean))].sort());
+  var cf = document.getElementById('cat-filters');
+  if(cf) cf.innerHTML = cats.map(function(c){
+    return '<button class="cat-filter'+(c===activeCat?' active':'')+'" onclick="setCat(\''+c+'\')" >'+c+'</button>';
+  }).join('');
+  // Update datalist
+  var dl = document.getElementById('cat-list');
+  if(dl) dl.innerHTML = cats.slice(1).map(function(c){ return '<option>'+c+'</option>'; }).join('');
+  // Filter
+  var filtered = inventory.filter(function(i){
+    var matchCat = activeCat==='All' || i.category===activeCat;
+    var matchSearch = !q || (i.description||'').toLowerCase().includes(q) || (i.itemCode||'').toLowerCase().includes(q) || (i.category||'').toLowerCase().includes(q);
+    return matchCat && matchSearch;
+  });
+  // Stats
+  document.getElementById('stat-total').textContent = inventory.length;
+  document.getElementById('stat-low').textContent   = inventory.filter(function(i){ return i.endingStock>0&&i.endingStock<=5; }).length;
+  document.getElementById('stat-out').textContent   = inventory.filter(function(i){ return i.endingStock<=0; }).length;
+  var val = inventory.reduce(function(s,i){ return s+(i.price*i.endingStock); },0);
+  document.getElementById('stat-value').textContent = '₱'+val.toFixed(2);
+  // Rows
+  var tbody = document.getElementById('inv-tbody');
+  if(!filtered.length){
+    tbody.innerHTML='<tr><td colspan="11" class="empty" style="text-align:center"><div class="empty-icon">📦</div><p>No items found.</p></td></tr>';
+    return;
+  }
+  tbody.innerHTML = filtered.map(function(i){
+    var stock = i.endingStock||0;
+    var badge = stock<=0 ? '<span class="badge badge-out">Out of Stock</span>'
+               : stock<=5? '<span class="badge badge-low">Low Stock</span>'
+                          : '<span class="badge badge-ok">In Stock</span>';
+    var rowStyle = stock<=0 ? 'background:#fff5f5' : '';
+    return '<tr style="'+rowStyle+'">'
+      +'<td data-label="Item Code"><b>'+( i.itemCode||'—')+'</b></td>'
+      +'<td data-label="Description">'+( i.description||'—')+'</td>'
+      +'<td data-label="Category">'+( i.category||'—')+'</td>'
+      +'<td data-label="Price">₱'+(i.price||0).toFixed(2)+'</td>'
+      +'<td data-label="Unit">'+( i.unit||'—')+'</td>'
+      +'<td data-label="UOM">'+( i.uom||'—')+'</td>'
+      +'<td data-label="Beg. Bal.">'+( i.begBal||0)+'</td>'
+      +'<td data-label="Ending Stock" style="font-weight:800;color:'+(stock<=0?'#E74C3C':stock<=5?'#E67E22':'#27AE60')+'">'+stock+'</td>'
+      +'<td data-label="Status">'+badge+'</td>'
+      +'<td data-label="Supplier">'+( i.supplier||'—')+'</td>'
+      +'<td class="td-actions" data-label="Actions"><div class="action-btns">'
+      +'<button class="icon-btn" style="background:#e8f0fe" onclick="editItem('+i.id+')" title="Edit">✏️</button>'
+      +'<button class="icon-btn" style="background:#fdecea" onclick="deleteItem('+i.id+')" title="Delete">🗑️</button>'
+      +'</div></td>'
+      +'</tr>';
+  }).join('');
+}
+
+function setCat(cat){ activeCat=cat; renderTable(); }
+
+// ── Logout ───────────────────────────────────────────────────────────────────
+async function doLogout(){
+  if(!confirm('Logout from Inventory?')) return;
+  try{ if(sessionToken) await sheetsCall('logout'); }catch(e){}
+  sessionToken = ''; backendUser = null;
   currentUser = null;
-  if(refreshTimer) clearInterval(refreshTimer);
   document.getElementById('main-app').style.display = 'none';
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('login-user').value = '';
   document.getElementById('login-pass').value = '';
   document.getElementById('login-error').textContent = '';
-  document.getElementById('orders-grid').innerHTML = '';
+  document.getElementById('user-badge').textContent = '';
 }
 
-// ── Google Apps Script URL — hardcoded (matches main POS deployment) ─────
-var SHEETS_URL = 'https://script.google.com/macros/s/AKfycbxuJNiAd0UH9nZ8Zc7IIxxfSvrKdFVPoEFBollzgtHlviBWJdyGLVtQ4f2Q3ADjiyr_rw/exec';
-
-var orders       = [];
-var doneToday    = 0;
-var autoRefresh  = true;
-var refreshTimer = null;
-var _online      = false;
-var _lastOrderIds= new Set();
-var _sessionToken = '';
-
-// Printer config
-var _pc = (function(){ try{ return JSON.parse(localStorage.getItem('gtg_kitchen_printer')||'{}'); }catch(e){ return {}; } })();
-var PRINTER_TYPE = _pc.type || 'rawbt';
-var PRINTER_IP   = _pc.ip   || '';
-var AUTO_PRINT   = _pc.auto !== 'no';
-
-// Clock
-setInterval(function(){
-  document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-PH');
-},1000);
-
-// Sheets call
-function sheetsCall(action, body){
-  body=Object.assign({},body||{});
-  if(_sessionToken && action!=='login') body.sessionToken=_sessionToken;
-  if(action==='login'){
-    return fetch(SHEETS_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(Object.assign({action:action},body)),redirect:'follow'}).then(function(r){return r.json();}).catch(function(){return null;});
-  }
-  return new Promise(function(resolve){
-    var cb='k_'+Date.now()+'_'+Math.random().toString(36).slice(2), script=document.createElement('script');
-    var t=setTimeout(function(){ resolve(null); try{document.body.removeChild(script);}catch(e){} delete window[cb]; },15000);
-    window[cb]=function(d){ clearTimeout(t); resolve(d); try{document.body.removeChild(script);}catch(e){} delete window[cb]; };
-    script.src=SHEETS_URL+'?action='+action+'&data='+encodeURIComponent(JSON.stringify(body||{}))+'&callback='+cb;
-    document.body.appendChild(script);
-  });
+// ── Modal ─────────────────────────────────────────────────────────────────────
+function openAddModal(){
+  editingId=null;
+  document.getElementById('modal-title').textContent='➕ Add Inventory Item';
+  ['m-code','m-name','m-cat','m-price','m-unit','m-uom','m-begbal','m-ending','m-supplier']
+    .forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
+  openModal();
 }
+function openModal(){ document.getElementById('item-modal').classList.add('active'); }
+function closeModal(id){ document.getElementById(id||'item-modal').classList.remove('active'); }
 
-// Init
-window.addEventListener('DOMContentLoaded', function(){
-  setTimeout(function(){ var el=document.getElementById('login-user'); if(el) el.focus(); }, 200);
-});
-
-async function initKitchen(){
-  setDB('loading','Connecting…');
-  loadPrinterSettings();
-  var auth=await sheetsCall('login',{username:currentUser.username,pin:currentUser.password});
-  if(auth&&auth.ok&&auth.sessionToken){
-    _sessionToken=auth.sessionToken;
-    // A successful login already confirms that the backend is reachable.
-    // Skip a second ping so the display starts loading orders immediately.
-    _online=true; setDB('ok','● Google Sheets ✓');
-    await refresh();
-    startAutoRefresh();
-  } else {
-    setDB('err','Offline — tap to retry');
-    showToast('⚠️ Cannot reach Sheets.','warning');
-    renderOrders();
-  }
-}
-
-// Refresh
-async function refresh(){
-  var res = await sheetsCall('getKitchenOrders');
-  if(res && res.orders){
-    var pending = res.orders.filter(function(o){ return o.status==='pending'; })
-      .map(function(o){
-        try{ var items = typeof o.items==='string' ? JSON.parse(o.items) : o.items; o.items=items; }catch(e){ o.items=[]; }
-        return o;
-      });
-    // Detect new orders for auto-print
-    if(AUTO_PRINT && _lastOrderIds.size > 0){
-      pending.forEach(function(o){
-        if(!_lastOrderIds.has(String(o.id))){ printTicket(o, true); }
-      });
-    }
-    _lastOrderIds = new Set(pending.map(function(o){ return String(o.id); }));
-    orders = pending;
-    renderOrders();
-  }
-}
-
-// Render
-function renderOrders(){
-  var grid = document.getElementById('orders-grid');
-  var now  = Date.now();
-  var urgent = 0;
-  document.getElementById('stat-pending').textContent   = orders.length;
-  document.getElementById('stat-done-today').textContent= doneToday;
-  if(!orders.length){
-    document.getElementById('stat-urgent').textContent = 0;
-    grid.innerHTML = '<div style="grid-column:1/-1"><div class="empty-state"><div class="icon">🍽️</div><h2>All Clear!</h2><p>No pending orders. Kitchen is caught up.</p></div></div>';
-    return;
-  }
-  grid.innerHTML = orders.map(function(o){
-    var elapsed = Math.floor((now - parseInt(o.sentAt||now)) / 1000);
-    var mins    = Math.floor(elapsed/60);
-    var secs    = elapsed%60;
-    var color   = elapsed<300?'green':elapsed<600?'orange':'red';
-    if(color==='red') urgent++;
-    var timerStr= mins+'m '+String(secs).padStart(2,'0')+'s';
-    var items   = (o.items||[]).map(function(item){
-      return '<div class="item-row"><span class="item-qty">x'+(item.qty||1)+'</span><span class="item-name">'+(item.name||item)+'</span></div>';
-    }).join('');
-    var note = o.notes ? '<div class="note-row">📝 '+o.notes+'</div>' : '';
-    var cust = o.customer ? '<div class="customer-row">👤 '+o.customer+'</div>' : '';
-    return '<div class="order-card '+color+'">'
-      +'<div class="card-header '+color+'">'
-      +'<div><div class="order-num">Order #'+(String(o.orderNum||o.id).padStart(4,'0'))+'</div>'
-      +'<div class="order-table">📍 '+(o.table||'Takeout')+(o.cashier?' · '+o.cashier:'')+'</div>'
-      +cust+'</div>'
-      +'<div class="timer-badge '+color+'">⏱ '+timerStr+'</div>'
-      +'</div>'
-      +'<div class="card-body">'+items+note+'</div>'
-      +'<div class="card-footer">'
-      +'<button class="btn-print-ticket" onclick="printTicket(orders.find(function(x){return x.id===\''+o.id+'\'}))" title="Print Ticket">🖨️</button>'
-      +'<button class="btn-done" onclick="markDone(\''+o.id+'\',\''+String(o.orderNum||'').padStart(4,'0')+'\')">✅ Mark Done</button>'
-      +'</div>'
-      +'</div>';
-  }).join('');
-  document.getElementById('stat-urgent').textContent = urgent;
-}
-
-// Mark Done
-async function markDone(id, num){
-  var original=orders.slice();
-  orders=orders.filter(function(o){ return String(o.id)!==String(id); });
-  doneToday++; renderOrders();
-  if(_online){
-    var saved=await sheetsCall('updateKitchenOrder',{id:id,status:'done'});
-    if(!saved||!saved.ok){ orders=original; doneToday=Math.max(0,doneToday-1); renderOrders(); showToast('❌ Could not sync completed order. Please try again.','error'); return; }
-  }
-  document.getElementById('done-title').textContent = 'Order #'+num+' Done!';
-  document.getElementById('done-sub').textContent   = 'Marked as complete ✓';
-  var ov=document.getElementById('done-overlay'); ov.classList.add('show');
-  setTimeout(function(){ ov.classList.remove('show'); },1800);
-}
-
-async function markAllDone(){
-  if(!orders.length){ showToast('No pending orders.','warning'); return; }
-  if(!confirm('Mark ALL '+orders.length+' orders as done?')) return;
-  var ids = orders.map(function(o){ return o.id; });
-  doneToday += orders.length;
-  orders=[];
-  renderOrders();
-  showToast('✅ All orders marked done!','success');
-  if(_online){ for(var i=0;i<ids.length;i++) await sheetsCall('updateKitchenOrder',{id:ids[i],status:'done'}); }
-}
-
-// Print Ticket
-function printTicket(o, silent){
-  if(!o) return;
-  var lines = [
-    '================================',
-    '      ** KITCHEN ORDER **',
-    '================================',
-    'Order #: '+String(o.orderNum||o.id||'').padStart(4,'0'),
-    'Table:   '+(o.table||'Takeout'),
-    o.customer?'Name:    '+o.customer:'',
-    'Time:    '+new Date().toLocaleTimeString('en-PH'),
-    o.cashier?'Cashier: '+o.cashier:'',
-    '--------------------------------'
-  ];
-  (o.items||[]).forEach(function(item){ lines.push('  x'+(item.qty||1)+'  '+(item.name||item)); });
-  if(o.notes){ lines.push('--------------------------------'); lines.push('NOTE: '+o.notes); }
-  lines.push('================================');
-  lines.push(''); lines.push(''); lines.push('');
-  var text = lines.filter(Boolean).join("\n");
-
-  if(PRINTER_TYPE==='rawbt'){
-    var a=document.createElement('a'); a.href='rawbt:'+encodeURIComponent(text);
-    a.style.display='none'; document.body.appendChild(a); a.click();
-    setTimeout(function(){ try{document.body.removeChild(a);}catch(e){} },1000);
-    if(!silent) showToast('🖨️ Sending to printer…','success');
-  } else {
-    var css='@page{margin:0;size:80mm auto}body{font-family:"Courier New",monospace;font-size:12px;width:72mm;margin:0 auto;padding:4mm;white-space:pre-wrap}';
-    var html='<!DOCTYPE html><html><head><meta charset="utf-8"><style>'+css+'</style></head><body>'+text+'<'+'script>window.onload=function(){window.print();setTimeout(function(){window.close()},500)}<'+'/script></body></html>';
-    var w=window.open('','_blank','width=400,height=500');
-    if(w){ w.document.write(html); w.document.close(); }
-    if(!silent) showToast('🖨️ Print dialog opened.','success');
-  }
-}
-
-// Auto-refresh
-function startAutoRefresh(){
-  if(refreshTimer) clearInterval(refreshTimer);
-  if(autoRefresh) refreshTimer=setInterval(refresh,4000);
-}
-function toggleAutoRefresh(){
-  autoRefresh=!autoRefresh;
-  document.getElementById('auto-toggle').className='toggle'+(autoRefresh?' on':'');
-  document.getElementById('auto-label').textContent='Auto-refresh '+(autoRefresh?'ON':'OFF');
-  document.getElementById('auto-badge').className='auto-badge'+(autoRefresh?' active':'');
-  startAutoRefresh();
-  showToast(autoRefresh?'Auto-refresh enabled (4s)':'Auto-refresh disabled','success');
-}
-
-// Printer Settings
-function toggleSettings(){ document.getElementById('settings-panel').classList.toggle('open'); }
-function updatePType(){
-  var t=document.getElementById('p-type').value;
-  document.getElementById('p-ip-group').style.display=t==='browser'?'block':'none';
-}
-function loadPrinterSettings(){
-  document.getElementById('p-type').value=PRINTER_TYPE;
-  document.getElementById('p-ip').value=PRINTER_IP;
-  document.getElementById('p-auto').value=AUTO_PRINT?'yes':'no';
-  updatePType();
-}
-function saveSettings(){
-  PRINTER_TYPE=document.getElementById('p-type').value;
-  PRINTER_IP  =document.getElementById('p-ip').value.trim();
-  AUTO_PRINT  =document.getElementById('p-auto').value==='yes';
-  localStorage.setItem('gtg_kitchen_printer',JSON.stringify({type:PRINTER_TYPE,ip:PRINTER_IP,auto:AUTO_PRINT?'yes':'no'}));
-  toggleSettings();
-  showToast('✅ Printer settings saved!','success');
-}
-
-// DB Status
-function setDB(state, msg){
+// ── UI Helpers ────────────────────────────────────────────────────────────────
+function setStatus(state, msg){
   var dot = document.getElementById('db-dot');
   var txt = document.getElementById('db-txt');
-  var pill= document.getElementById('db-pill');
-  var col = state==='ok' ? '#27AE60' : state==='loading' ? '#F39C12' : '#E74C3C';
-  var tcol= state==='ok' ? '#4ade80' : state==='loading' ? '#fbbf24' : '#f87171';
-  if(dot){ 
-    dot.style.background   = col;
-    dot.style.boxShadow    = '0 0 8px '+col;
-    dot.style.animation    = state==='loading' ? 'pulse 1s infinite' : 'none';
-  }
-  if(txt){ txt.textContent=msg; txt.style.color=tcol; }
-  if(pill){ pill.style.borderColor=col+'44'; }
+  var box = document.getElementById('db-status');
+  var colors = {connected:'#27AE60', disconnected:'#E74C3C', loading:'#F39C12'};
+  var col = colors[state] || '#F39C12';
+  if(dot){ dot.style.background=col; dot.style.boxShadow='0 0 8px '+col; }
+  if(txt){ txt.textContent=msg; txt.style.color=state==='connected'?'#4ade80':state==='disconnected'?'#f87171':'#fbbf24'; }
+  if(box){ box.style.borderColor=col+'55'; }
+  // Show item count when connected
+  var cnt = document.getElementById('db-count');
+  if(cnt && state==='connected') cnt.textContent = inventory.length + ' items loaded';
 }
 
-// Toast
 var _toastTimer;
-function showToast(msg,type){
+function showToast(msg, type){
   var el=document.getElementById('toast');
+  if(!el) return;
   el.textContent=msg; el.className='toast show '+(type||'');
   clearTimeout(_toastTimer);
-  _toastTimer=setTimeout(function(){ el.className='toast'; },3000);
+  _toastTimer=setTimeout(function(){ el.className='toast'; },3500);
 }
 </script>
 </body>
