@@ -278,10 +278,10 @@ tr:hover td{background:#f8faff}
 
 <script>
 // ── Config ────────────────────────────────────────────────────────────────────
-// Google Apps Script URL — hardcoded to the same deployed script used by the POS.
+// Google Apps Script URL — hardcoded v8.5.1 database-login / two-way-sync deployment.
 try{localStorage.removeItem('gtg_stock_inventory');}catch(e){}
 try{localStorage.removeItem('gtg_sheets_url');}catch(e){}
-var SHEETS_URL = 'https://script.google.com/macros/s/AKfycbxA97jKz4mWxOiEyxk9zfXuV3jAtL4LjBR862MPzdhXdWXxlABKQdHdNY5LujmmHlrQPg/exec';
+var SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyseP-hexGb1QHCzLnInUFbTr8wwkAdVIJ1t_k_IEMcuw_4G77Q8d7V8TMvXUiIKi6h-g/exec';
 
 // ── State ─────────────────────────────────────────────────────────────────────
 var inventory = [];
@@ -311,9 +311,14 @@ async function doLogin(){
   if(!user || !pass){ errEl.textContent='❌ Enter username and PIN.'; return; }
   if(btn){btn.disabled=true;btn.textContent='🔄 Signing in…';}
   try{
-    var res = await _postAction('login',{username:user,pin:pass});
+    var res = await _call(SHEETS_URL,'login',{username:user,pin:pass});
     if(!res || !res.ok || !res.sessionToken){
-      errEl.textContent = res && res.error==='TOO_MANY_ATTEMPTS' ? '❌ Too many attempts. Try again later.' : (res && res.error==='POST_REQUIRED' ? '❌ Backend deployment is outdated. Redeploy the new Apps Script.' : '❌ Wrong username/PIN or backend login failed.');
+      if(!res){ errEl.textContent='❌ Cannot reach Apps Script. Check deployment access.'; }
+      else if(res.error==='TOO_MANY_ATTEMPTS'){ errEl.textContent='❌ Too many attempts. Try again later.'; }
+      else if(res.error==='USER_NOT_FOUND'){ errEl.textContent='❌ Username not found in Cashiers database.'; }
+      else if(res.error==='PIN_MISMATCH'){ errEl.textContent='❌ PIN does not match the Cashiers database.'; }
+      else if(res.error==='NO_SPREADSHEET'){ errEl.textContent='❌ Backend is not connected to your Google Sheet.'; }
+      else { errEl.textContent='❌ Login failed: '+(res.error||'BACKEND_ERROR'); }
       return;
     }
     sessionToken = res.sessionToken;
